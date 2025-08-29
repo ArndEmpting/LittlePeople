@@ -28,8 +28,8 @@ public class DefaultEventScheduler implements EventScheduler {
     private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
 
     private final PriorityBlockingQueue<Event> eventQueue;
-    private final Map<String, Event> eventMap;
-    private final Map<String, EventProcessor> processors;
+    private final Map<UUID, Event> eventMap;
+    private final Map<EventType, EventProcessor> processors;
     private final SimulationClock simulationClock;
 
     /**
@@ -82,7 +82,8 @@ public class DefaultEventScheduler implements EventScheduler {
             scheduledTime,
             event.getTargetEntityId(),
             ((SimulationEvent) event).getPriority(),
-            event.getData()
+                 event.getData(),
+                event.getSourceId()
         );
 
         scheduleEvent(delayedEvent);
@@ -262,7 +263,7 @@ public class DefaultEventScheduler implements EventScheduler {
     }
 
     @Override
-    public void unregisterProcessor(String eventType) {
+    public void unregisterProcessor(EventType eventType) {
         if (eventType != null) {
             processors.remove(eventType);
             logger.debug("Unregistered processor for event type: {}", eventType);

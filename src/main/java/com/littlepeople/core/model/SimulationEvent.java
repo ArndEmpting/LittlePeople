@@ -1,6 +1,8 @@
 package com.littlepeople.core.model;
 
 import com.littlepeople.core.interfaces.Event;
+
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,15 +15,16 @@ import java.util.UUID;
  */
 public class SimulationEvent implements Event {
 
-    private final String id;
-    private final String type;
-    private final LocalDateTime scheduledTime;
-    private final int priority;
-    private final String targetEntityId;
-    private final Map<String, Object> data;
+    private  UUID id;
+    private  EventType type;
+    private  LocalDateTime scheduledTime;
+    private  int priority;
+    private  String targetEntityId;
+    private  Map<String, Object> data;
     private boolean processed;
     private boolean cancelled;
-
+    private UUID sourceId;
+    private Instant timestamp;
     /**
      * Constructor for creating a new simulation event.
      *
@@ -31,16 +34,16 @@ public class SimulationEvent implements Event {
      * @param priority the event priority
      * @param data additional event data
      */
-    public SimulationEvent(String type, LocalDateTime scheduledTime, String targetEntityId,
-                          int priority, Map<String, Object> data) {
-        if (type == null || type.trim().isEmpty()) {
-            throw new IllegalArgumentException("Event type cannot be null or empty");
+    public SimulationEvent(EventType type, LocalDateTime scheduledTime, String targetEntityId,
+                          int priority, Map<String, Object> data, UUID sourceId) {
+        if (type == null) {
+            throw new IllegalArgumentException("Event type cannot be null");
         }
         if (scheduledTime == null) {
             throw new IllegalArgumentException("Scheduled time cannot be null");
         }
 
-        this.id = UUID.randomUUID().toString();
+        this.id = UUID.randomUUID();
         this.type = type;
         this.scheduledTime = scheduledTime;
         this.targetEntityId = targetEntityId;
@@ -48,30 +51,42 @@ public class SimulationEvent implements Event {
         this.data = data != null ? new HashMap<>(data) : new HashMap<>();
         this.processed = false;
         this.cancelled = false;
+        this.sourceId = sourceId;
+
     }
 
     /**
      * Convenience constructor with default priority (0) and no data.
      */
-    public SimulationEvent(String type, LocalDateTime scheduledTime, String targetEntityId) {
-        this(type, scheduledTime, targetEntityId, 0, null);
+    public SimulationEvent(EventType type, LocalDateTime scheduledTime, String targetEntityId) {
+        this(type, scheduledTime, targetEntityId, 0, null, null);
     }
 
     /**
      * Convenience constructor for system events (no target entity).
      */
-    public SimulationEvent(String type, LocalDateTime scheduledTime) {
-        this(type, scheduledTime, null, 0, null);
+    public SimulationEvent(EventType type, LocalDateTime scheduledTime) {
+        this(type, scheduledTime,  null);
     }
 
     @Override
-    public String getId() {
+    public UUID getId() {
         return id;
     }
 
     @Override
-    public String getType() {
+    public EventType getType() {
         return type;
+    }
+
+    @Override
+    public Instant getTimestamp() {
+        return null;
+    }
+
+    @Override
+    public UUID getSourceId() {
+        return null;
     }
 
     @Override

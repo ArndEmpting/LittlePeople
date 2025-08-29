@@ -1,7 +1,11 @@
 package com.littlepeople.core.interfaces;
 
+import com.littlepeople.core.model.EventType;
+import com.littlepeople.core.model.EventType;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Base interface for all simulation events.
@@ -23,65 +27,46 @@ public interface Event {
      *
      * @return the event ID, never null
      */
-    String getId();
+    UUID getId();
 
     /**
      * Returns the type of this event.
      *
-     * @return the event type, never null
-     */
-    String getType();
+     * @return the event type, never null */
+    EventType getType();
 
     /**
      * Returns the timestamp when this event occurred.
      *
      * @return the event timestamp, never null
      */
-    LocalDateTime getScheduledTime();
+    Instant getTimestamp();
 
     /**
      * Returns the source entity that generated this event, if applicable.
      *
      * @return the source entity ID, or null if this is a system event
      */
-    String getTargetEntityId();
+    UUID getSourceId();
 
     /**
      * Returns additional data associated with this event.
      *
-     * @return a map of event data
+     * @return the event data, may be null
      */
     Map<String, Object> getData();
 
-    /**
-     * Returns a specific data value from the event.
-     *
-     * @param key the data key
-     * @return the data value, or null if not found
-     */
+    LocalDateTime getScheduledTime();
+
+    String getTargetEntityId();
+
     Object getData(String key);
 
-    /**
-     * Checks if this event has been processed.
-     *
-     * @return true if the event has been processed
-     */
     boolean isProcessed();
 
-    /**
-     * Marks this event as processed.
-     */
     void markProcessed();
 
-    /**
-     * Checks if this event has been cancelled.
-     *
-     * @return true if the event has been cancelled
-     */
     boolean isCancelled();
 
-    /**
-     * Cancels this event.
-     */
     void cancel();
 }

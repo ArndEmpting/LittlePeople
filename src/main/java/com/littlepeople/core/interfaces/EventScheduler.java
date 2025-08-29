@@ -1,6 +1,7 @@
 package com.littlepeople.core.interfaces;
 
 import com.littlepeople.core.exceptions.SimulationException;
+import com.littlepeople.core.model.EventType;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -106,5 +107,5 @@ public interface EventScheduler {
      *
      * @param eventType the event type to unregister
      */
-    void unregisterProcessor(String eventType);
+    void unregisterProcessor(EventType eventType);
 }

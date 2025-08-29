@@ -31,10 +31,10 @@ class SimulationEventTest {
     @Test
     @DisplayName("Should create event with all parameters")
     void shouldCreateEventWithAllParameters() {
-        SimulationEvent event = new SimulationEvent("TEST_EVENT", testTime, "entity123", 5, testData);
+        SimulationEvent event = new SimulationEvent(EventType.ENTITY, testTime, "entity123", 5, testData,null);
 
-        assertThat(event.getId()).isNotNull().isNotEmpty();
-        assertThat(event.getType()).isEqualTo("TEST_EVENT");
+        assertThat(event.getId()).isNotNull();
+        assertThat(event.getType()).isEqualTo(EventType.ENTITY);
         assertThat(event.getScheduledTime()).isEqualTo(testTime);
         assertThat(event.getTargetEntityId()).isEqualTo("entity123");
         assertThat(event.getPriority()).isEqualTo(5);
@@ -46,10 +46,10 @@ class SimulationEventTest {
     @Test
     @DisplayName("Should create event with minimal parameters")
     void shouldCreateEventWithMinimalParameters() {
-        SimulationEvent event = new SimulationEvent("TEST_EVENT", testTime);
+        SimulationEvent event = new SimulationEvent(EventType.SYSTEM, testTime);
 
-        assertThat(event.getId()).isNotNull().isNotEmpty();
-        assertThat(event.getType()).isEqualTo("TEST_EVENT");
+        assertThat(event.getId()).isNotNull();
+        assertThat(event.getType()).isEqualTo(EventType.SYSTEM);
         assertThat(event.getScheduledTime()).isEqualTo(testTime);
         assertThat(event.getTargetEntityId()).isNull();
         assertThat(event.getPriority()).isEqualTo(0);
@@ -61,21 +61,13 @@ class SimulationEventTest {
     void shouldThrowExceptionForNullType() {
         assertThatThrownBy(() -> new SimulationEvent(null, testTime))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Event type cannot be null or empty");
-    }
-
-    @Test
-    @DisplayName("Should throw exception for empty type")
-    void shouldThrowExceptionForEmptyType() {
-        assertThatThrownBy(() -> new SimulationEvent("", testTime))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Event type cannot be null or empty");
+                .hasMessage("Event type cannot be null");
     }
 
     @Test
     @DisplayName("Should throw exception for null scheduled time")
     void shouldThrowExceptionForNullScheduledTime() {
-        assertThatThrownBy(() -> new SimulationEvent("TEST_EVENT", null))
+        assertThatThrownBy(() -> new SimulationEvent(EventType.SYSTEM, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Scheduled time cannot be null");
     }
@@ -83,7 +75,7 @@ class SimulationEventTest {
     @Test
     @DisplayName("Should mark event as processed")
     void shouldMarkEventAsProcessed() {
-        SimulationEvent event = new SimulationEvent("TEST_EVENT", testTime);
+        SimulationEvent event = new SimulationEvent(EventType.SYSTEM, testTime);
 
         assertThat(event.isProcessed()).isFalse();
         event.markProcessed();
@@ -93,7 +85,7 @@ class SimulationEventTest {
     @Test
     @DisplayName("Should cancel event")
     void shouldCancelEvent() {
-        SimulationEvent event = new SimulationEvent("TEST_EVENT", testTime);
+        SimulationEvent event = new SimulationEvent(EventType.SYSTEM, testTime);
 
         assertThat(event.isCancelled()).isFalse();
         event.cancel();
@@ -103,7 +95,7 @@ class SimulationEventTest {
     @Test
     @DisplayName("Should get specific data value")
     void shouldGetSpecificDataValue() {
-        SimulationEvent event = new SimulationEvent("TEST_EVENT", testTime, null, 0, testData);
+        SimulationEvent event = new SimulationEvent(EventType.ENTITY, testTime, null, 0, testData,null);
 
         assertThat(event.getData("key1")).isEqualTo("value1");
         assertThat(event.getData("key2")).isEqualTo(42);
@@ -113,7 +105,7 @@ class SimulationEventTest {
     @Test
     @DisplayName("Should return defensive copy of data")
     void shouldReturnDefensiveCopyOfData() {
-        SimulationEvent event = new SimulationEvent("TEST_EVENT", testTime, null, 0, testData);
+        SimulationEvent event = new SimulationEvent(EventType.ENTITY, testTime, null, 0, testData,null);
 
         Map<String, Object> retrievedData = event.getData();
         retrievedData.put("newKey", "newValue");
@@ -125,8 +117,8 @@ class SimulationEventTest {
     @Test
     @DisplayName("Should generate unique IDs for different events")
     void shouldGenerateUniqueIdsForDifferentEvents() {
-        SimulationEvent event1 = new SimulationEvent("TEST_EVENT", testTime);
-        SimulationEvent event2 = new SimulationEvent("TEST_EVENT", testTime);
+        SimulationEvent event1 = new SimulationEvent(EventType.SYSTEM, testTime);
+        SimulationEvent event2 = new SimulationEvent(EventType.SYSTEM, testTime);
 
         assertThat(event1.getId()).isNotEqualTo(event2.getId());
     }
@@ -134,8 +126,8 @@ class SimulationEventTest {
     @Test
     @DisplayName("Should implement equals and hashCode correctly")
     void shouldImplementEqualsAndHashCodeCorrectly() {
-        SimulationEvent event1 = new SimulationEvent("TEST_EVENT", testTime);
-        SimulationEvent event2 = new SimulationEvent("TEST_EVENT", testTime);
+        SimulationEvent event1 = new SimulationEvent(EventType.SYSTEM, testTime);
+        SimulationEvent event2 = new SimulationEvent(EventType.SYSTEM, testTime);
 
         // Different events should not be equal
         assertThat(event1).isNotEqualTo(event2);

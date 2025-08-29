@@ -1,6 +1,7 @@
 package com.littlepeople.core.interfaces;
 
 import com.littlepeople.core.exceptions.SimulationException;
+import com.littlepeople.core.model.EventType;
 
 /**
  * Interface for processing events in the simulation system.
@@ -14,7 +15,7 @@ public interface EventProcessor {
      *
      * @return the event type
      */
-    String getEventType();
+    EventType getEventType();
 
     /**
      * Processes the given event.
@@ -30,7 +31,7 @@ public interface EventProcessor {
      * @param eventType the event type to check
      * @return true if this processor can handle the event type
      */
-    boolean canProcess(String eventType);
+    boolean canProcess(EventType eventType);
 
     /**
      * Gets the priority of this processor when multiple processors
