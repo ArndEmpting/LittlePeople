@@ -1,87 +1,83 @@
 package com.littlepeople.core.interfaces;
 
 import com.littlepeople.core.exceptions.SimulationException;
-import com.littlepeople.core.exceptions.SimulationControlException;
-import com.littlepeople.core.model.SimulationStatus;
+import java.time.LocalDateTime;
 
 /**
- * Interface for simulation lifecycle management.
- *
- * <p>This interface defines the contract for managing the lifecycle
- * of simulation components. It provides standard methods for
- * initialization, execution control, and status monitoring.</p>
- *
- * <p>Design Pattern: This interface implements the State pattern,
- * allowing simulation components to manage their operational state
- * in a consistent manner.</p>
- *
- * @since 1.0.0
- * @version 1.0.0
+ * Interface for managing the lifecycle of a simulation.
+ * This interface defines the basic operations for starting, stopping,
+ * pausing, and controlling the simulation execution.
  */
 public interface SimulationLifecycle {
 
     /**
-     * Initializes the simulation component.
+     * Starts the simulation.
      *
-     * <p>This method prepares the component for execution by setting up
-     * necessary resources, configurations, and initial state. It should
-     * be called before any other lifecycle methods.</p>
-     *
-     * @throws SimulationException if initialization fails
+     * @throws SimulationException if the simulation cannot be started
      */
-    void initialize() throws SimulationException;
+    void start() throws SimulationException;
 
     /**
-     * Starts the simulation component.
+     * Stops the simulation.
      *
-     * <p>This method begins execution of the component. The component
-     * must be in an initialized state before calling this method.</p>
-     *
-     * @throws SimulationControlException if the component cannot be started
-     * @throws IllegalStateException if the component is not initialized
+     * @throws SimulationException if the simulation cannot be stopped
      */
-    void start() throws SimulationControlException;
+    void stop() throws SimulationException;
 
     /**
-     * Pauses the simulation component.
+     * Pauses the simulation.
      *
-     * <p>This method temporarily suspends execution while preserving
-     * the current state. The component can be resumed later.</p>
-     *
-     * @throws SimulationControlException if the component cannot be paused
-     * @throws IllegalStateException if the component is not running
+     * @throws SimulationException if the simulation cannot be paused
      */
-    void pause() throws SimulationControlException;
+    void pause() throws SimulationException;
 
     /**
-     * Resumes the simulation component from a paused state.
+     * Resumes a paused simulation.
      *
-     * <p>This method continues execution from where it was paused,
-     * restoring the component to its running state.</p>
-     *
-     * @throws SimulationControlException if the component cannot be resumed
-     * @throws IllegalStateException if the component is not paused
+     * @throws SimulationException if the simulation cannot be resumed
      */
-    void resume() throws SimulationControlException;
+    void resume() throws SimulationException;
 
     /**
-     * Stops the simulation component.
+     * Resets the simulation to its initial state.
      *
-     * <p>This method terminates execution and releases any resources.
-     * After stopping, the component must be re-initialized before
-     * it can be started again.</p>
-     *
-     * @throws SimulationControlException if the component cannot be stopped
+     * @throws SimulationException if the simulation cannot be reset
      */
-    void stop() throws SimulationControlException;
+    void reset() throws SimulationException;
 
     /**
-     * Returns the current status of the simulation component.
+     * Checks if the simulation is currently running.
      *
-     * <p>This method provides real-time information about the
-     * component's operational state.</p>
-     *
-     * @return the current simulation status, never null
+     * @return true if the simulation is running
      */
-    SimulationStatus getStatus();
+    boolean isRunning();
+
+    /**
+     * Checks if the simulation is currently paused.
+     *
+     * @return true if the simulation is paused
+     */
+    boolean isPaused();
+
+    /**
+     * Checks if the simulation has been stopped.
+     *
+     * @return true if the simulation is stopped
+     */
+    boolean isStopped();
+
+    /**
+     * Gets the current simulation time.
+     *
+     * @return the current simulation time
+     */
+    LocalDateTime getCurrentTime();
+
+    /**
+     * Sets the simulation time.
+     *
+     * @param time the new simulation time
+     * @throws SimulationException if the time cannot be set
+     */
+    void setCurrentTime(LocalDateTime time) throws SimulationException;
 }

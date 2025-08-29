@@ -1,8 +1,7 @@
 package com.littlepeople.core.interfaces;
 
-import com.littlepeople.core.model.EventType;
-import java.time.Instant;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * Base interface for all simulation events.
@@ -24,33 +23,65 @@ public interface Event {
      *
      * @return the event ID, never null
      */
-    UUID getId();
+    String getId();
 
     /**
      * Returns the type of this event.
      *
      * @return the event type, never null
      */
-    EventType getType();
+    String getType();
 
     /**
      * Returns the timestamp when this event occurred.
      *
      * @return the event timestamp, never null
      */
-    Instant getTimestamp();
+    LocalDateTime getScheduledTime();
 
     /**
      * Returns the source entity that generated this event, if applicable.
      *
      * @return the source entity ID, or null if this is a system event
      */
-    UUID getSourceId();
+    String getTargetEntityId();
 
     /**
      * Returns additional data associated with this event.
      *
-     * @return the event data, may be null
+     * @return a map of event data
      */
-    Object getData();
+    Map<String, Object> getData();
+
+    /**
+     * Returns a specific data value from the event.
+     *
+     * @param key the data key
+     * @return the data value, or null if not found
+     */
+    Object getData(String key);
+
+    /**
+     * Checks if this event has been processed.
+     *
+     * @return true if the event has been processed
+     */
+    boolean isProcessed();
+
+    /**
+     * Marks this event as processed.
+     */
+    void markProcessed();
+
+    /**
+     * Checks if this event has been cancelled.
+     *
+     * @return true if the event has been cancelled
+     */
+    boolean isCancelled();
+
+    /**
+     * Cancels this event.
+     */
+    void cancel();
 }

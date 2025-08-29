@@ -1,48 +1,42 @@
 package com.littlepeople.core.interfaces;
 
 import com.littlepeople.core.exceptions.SimulationException;
-import com.littlepeople.core.model.EventType;
 
 /**
- * Interface for simulation event processing.
- *
- * <p>This interface defines the contract for components that can process
- * simulation events. It supports the Observer pattern by allowing
- * different processors to handle specific types of events within
- * the simulation system.</p>
- *
- * <p>Design Pattern: This interface implements the Observer/Handler pattern,
- * enabling a decoupled event-driven architecture where multiple processors
- * can respond to different event types.</p>
- *
- * @since 1.0.0
- * @version 1.0.0
+ * Interface for processing events in the simulation system.
+ * Event processors are responsible for handling specific types of events
+ * and implementing the business logic associated with them.
  */
 public interface EventProcessor {
 
     /**
-     * Processes the given simulation event.
+     * Gets the event type that this processor can handle.
      *
-     * <p>This method is called when an event occurs that this processor
-     * can handle. Implementations should check if they can handle the
-     * event type before processing.</p>
+     * @return the event type
+     */
+    String getEventType();
+
+    /**
+     * Processes the given event.
      *
-     * @param event the event to process, must not be null
-     * @throws IllegalArgumentException if the event is null
-     * @throws SimulationException if an error occurs during event processing
+     * @param event the event to process
+     * @throws SimulationException if processing fails
      */
     void processEvent(Event event) throws SimulationException;
 
     /**
-     * Determines if this processor can handle the specified event type.
+     * Checks if this processor can handle the given event type.
      *
-     * <p>This method allows the event system to efficiently route events
-     * to appropriate processors without attempting to process incompatible
-     * event types.</p>
-     *
-     * @param eventType the type of event to check, must not be null
-     * @return true if this processor can handle the event type, false otherwise
-     * @throws IllegalArgumentException if eventType is null
+     * @param eventType the event type to check
+     * @return true if this processor can handle the event type
      */
-    boolean canHandle(EventType eventType);
+    boolean canProcess(String eventType);
+
+    /**
+     * Gets the priority of this processor when multiple processors
+     * can handle the same event type.
+     *
+     * @return the processor priority (higher values = higher priority)
+     */
+    int getPriority();
 }
