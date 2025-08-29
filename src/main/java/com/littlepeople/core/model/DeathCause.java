@@ -55,7 +55,7 @@ public enum DeathCause {
      * childbirth or in the immediate postnatal period
      * due to birth complications or congenital issues.</p>
      */
-    BIRTH_COMPLICATION("Birth Complication"),
+    INFANT_MORTALITY("Infant Mortality"),
 
     /**
      * Death from unknown or unexplained causes.

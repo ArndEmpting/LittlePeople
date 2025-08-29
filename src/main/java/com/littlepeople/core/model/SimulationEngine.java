@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -23,6 +25,8 @@ public class SimulationEngine implements SimulationLifecycle {
 
     private final SimulationClock clock;
     private final EventScheduler eventScheduler;
+    private final EventProcessorRegistry processorRegistry;
+    private final Map<String, Person> personRegistry;
     private SimulationState state;
     private Thread simulationThread;
     private volatile boolean shouldStop;
@@ -42,8 +46,13 @@ public class SimulationEngine implements SimulationLifecycle {
     public SimulationEngine(LocalDateTime startTime) {
         this.clock = new DefaultSimulationClock(startTime);
         this.eventScheduler = new DefaultEventScheduler(clock);
+        this.personRegistry = new ConcurrentHashMap<>();
+        this.processorRegistry = new EventProcessorRegistry(eventScheduler, personRegistry);
         this.state = SimulationState.STOPPED;
         this.shouldStop = false;
+
+        // Initialize event processors
+        initializeEventProcessors();
     }
 
     /**
@@ -51,6 +60,19 @@ public class SimulationEngine implements SimulationLifecycle {
      */
     public SimulationEngine() {
         this(LocalDateTime.now());
+    }
+
+    /**
+     * Initializes all event processors for the fully event-driven architecture.
+     */
+    private void initializeEventProcessors() {
+        try {
+            processorRegistry.registerAllProcessors();
+            logger.info("Event processors initialized successfully");
+        } catch (SimulationException e) {
+            logger.error("Failed to initialize event processors", e);
+            throw new RuntimeException("Simulation engine initialization failed", e);
+        }
     }
 
     @Override
@@ -146,6 +168,12 @@ public class SimulationEngine implements SimulationLifecycle {
 
             clock.reset();
             eventScheduler.clear();
+
+            // Clear person registry and reinitialize processors
+            personRegistry.clear();
+            processorRegistry.unregisterAllProcessors();
+            processorRegistry.registerAllProcessors();
+
             state = SimulationState.STOPPED;
 
             logger.info("Simulation reset to start time: {}", clock.getStartTime());
@@ -351,5 +379,23 @@ public class SimulationEngine implements SimulationLifecycle {
         } finally {
             readLock.unlock();
         }
+    }
+
+    /**
+     * Gets the person registry.
+     *
+     * @return the person registry
+     */
+    public Map<String, Person> getPersonRegistry() {
+        return personRegistry;
+    }
+
+    /**
+     * Gets the event processor registry.
+     *
+     * @return the event processor registry
+     */
+    public EventProcessorRegistry getProcessorRegistry() {
+        return processorRegistry;
     }
 }
