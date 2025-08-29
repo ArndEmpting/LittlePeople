@@ -14,6 +14,18 @@ package com.littlepeople.core.model;
 public enum PersonalityTrait {
 
     /**
+     * Extroversion and social energy. Low values are introverted.
+     *
+     * <p>Represents sociability, assertiveness, and
+     * comfort in social situations. High extroversion
+     * correlates with leadership and social influence.
+     * Introverted individuals may prefer solitude and
+     * smaller social circles.
+     * </p>
+     */
+    EXTROVERSION("Extroversion"),
+
+    /**
      * Openness to experience.
      *
      * <p>Represents creativity, intellectual curiosity, and

@@ -12,7 +12,15 @@ package com.littlepeople.core.model;
  * @version 1.0.0
  */
 public enum HealthStatus {
-
+    /**
+     * Person is in excellent health with very low mortality risk.
+     *
+     * <p>Represents optimal health status with reduced mortality
+     * risk and full participation in simulation activities.
+     * This status may be achieved through healthy lifestyle
+     * choices or medical interventions.</p>
+     */
+    EXCELLENT(0.8),
     /**
      * Person is in good health with no significant issues.
      *

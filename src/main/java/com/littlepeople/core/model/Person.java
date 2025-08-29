@@ -213,6 +213,10 @@ public class Person implements Entity {
                    otherPerson.firstName, otherPerson.lastName);
     }
 
+    public boolean isDeceased() {
+        return !isAlive();
+    }
+
     /**
      * Validates whether a partnership can be formed with another person.
      */
@@ -297,13 +301,19 @@ public class Person implements Entity {
         validateChildRelationship(child);
 
         // Add bidirectional relationship
-        this.children.add(child);
-        child.parents.add(this);
+        if(!this.children.contains(child)) {
+            this.children.add(child);
+        }
+        if(!child.parents.contains(this)) {
+            child.parents.add(this);
+        }
 
         // If this person has a partner, add child to partner as well
         if (partner != null && !partner.children.contains(child)) {
             partner.children.add(child);
-            child.parents.add(partner);
+            if(!child.parents.contains(partner)) {
+                child.parents.add(partner);
+            }
         }
 
         logger.debug("Added child {} {} to parent {} {}",
@@ -321,9 +331,7 @@ public class Person implements Entity {
         if (child == this) {
             throw new IllegalArgumentException("Person cannot be their own child");
         }
-        if (children.contains(child)) {
-            throw new IllegalArgumentException("Child relationship already exists");
-        }
+
         if (child.birthDate.isBefore(this.birthDate)) {
             throw new IllegalArgumentException("Child cannot be older than parent");
         }

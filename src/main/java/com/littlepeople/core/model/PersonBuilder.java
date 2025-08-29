@@ -124,7 +124,10 @@ public class PersonBuilder {
         this.wealthStatus = wealthStatus;
         return this;
     }
-
+    public PersonBuilder personalityTraits(Map<PersonalityTrait, Integer> traits) {
+        this.personalityTraits=traits;
+        return this;
+    }
     /**
      * Sets a specific personality trait value (0-100).
      *
@@ -187,46 +190,6 @@ public class PersonBuilder {
     }
 
     /**
-     * Creates a child person that inherits traits from two parents (for RFC-005).
-     * This method handles trait inheritance with genetic variation.
-     *
-     * @param parent1 first parent
-     * @param parent2 second parent
-     * @param childBirthDate birth date for the child
-     * @return this builder instance configured with inherited values
-     */
-    public PersonBuilder childFromParents(Person parent1, Person parent2, LocalDate childBirthDate) {
-        if (parent1 == null || parent2 == null) {
-            throw new IllegalArgumentException("Both parents must be non-null");
-        }
-        if (childBirthDate == null) {
-            throw new IllegalArgumentException("Child birth date cannot be null");
-        }
-
-        this.birthDate = childBirthDate;
-
-        // Random gender (50/50 chance)
-        this.gender = random.nextBoolean() ? Gender.MALE : Gender.FEMALE;
-
-        // Generate child names using NameGenerator (inherit last name from one parent)
-        this.firstName = nameGenerator.generateFirstName(gender);
-        this.lastName = parent1.getLastName(); // Simple inheritance - could be more sophisticated
-
-        // Children are typically healthy at birth
-        this.healthStatus = HealthStatus.HEALTHY;
-
-        // Inherit wealth status from parents (take the better of the two)
-        WealthStatus parent1Wealth = parent1.getWealthStatus();
-        WealthStatus parent2Wealth = parent2.getWealthStatus();
-        this.wealthStatus = parent1Wealth.ordinal() > parent2Wealth.ordinal() ? parent1Wealth : parent2Wealth;
-
-        // Generate inherited personality traits with variation
-        generateInheritedTraits(parent1, parent2);
-
-        return this;
-    }
-
-    /**
      * Generates completely random personality traits (0-100%) for seeding persons.
      * This creates the founding population with maximum trait diversity.
      */
@@ -239,32 +202,8 @@ public class PersonBuilder {
         }
     }
 
-    /**
-     * Generates inherited personality traits from two parents with some variation.
-     * This will be used for child generation in RFC-005.
-     *
-     * @param parent1 first parent
-     * @param parent2 second parent
-     */
-    private void generateInheritedTraits(Person parent1, Person parent2) {
-        personalityTraits.clear();
 
-        for (PersonalityTrait trait : PersonalityTrait.values()) {
-            // Get trait values from both parents
-            int parent1Value = parent1.getPersonalityTrait(trait);
-            int parent2Value = parent2.getPersonalityTrait(trait);
 
-            // Calculate average of parents
-            // instead of average take the value of one of the parents
-            int inheritedValue = random.nextBoolean() ? parent1Value : parent2Value;
-
-            // Add some random variation (±20 points)
-            int variation = random.nextInt(41) - 20; // -20 to +20
-            int childValue = Math.max(0, Math.min(100, inheritedValue + variation));
-
-            personalityTraits.put(trait, childValue);
-        }
-    }
 
     /**
      * Builds and returns the Person instance with the configured attributes.

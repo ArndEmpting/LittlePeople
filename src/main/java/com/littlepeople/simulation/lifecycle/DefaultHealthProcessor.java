@@ -117,8 +117,18 @@ public class DefaultHealthProcessor implements HealthProcessor, EventProcessor {
 
         // Process health transitions
         switch (currentHealth) {
+            case EXCELLENT:
+                // Excellent health rarely declines
+                if (roll < declineProbability * 0.5) {
+                    logger.trace("Person {} (age {}) declined from excellent to healthy", person.getId(), age);
+                    return HealthStatus.HEALTHY;
+                }
+                break;
             case HEALTHY:
-                if (roll < declineProbability) {
+                if (roll < improvementProbability * 0.1) {
+                    logger.trace("Person {} (age {}) improved from healthy to excellent", person.getId(), age);
+                    return HealthStatus.EXCELLENT;
+                } else if (roll < declineProbability) {
                     // Decline from healthy - mostly to sick, rarely to critically ill
                     if (random.nextDouble() < 0.9) {
                         logger.trace("Person {} (age {}) became sick", person.getId(), age);

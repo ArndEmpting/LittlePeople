@@ -258,14 +258,7 @@ class PersonTest {
                 testPerson.addChild(olderChild));
         }
 
-        @Test
-        @DisplayName("Should reject duplicate child relationship")
-        void shouldRejectDuplicateChildRelationship() {
-            testPerson.addChild(child);
 
-            assertThrows(IllegalArgumentException.class, () ->
-                testPerson.addChild(child));
-        }
 
         @Test
         @DisplayName("Should add child to both partners")

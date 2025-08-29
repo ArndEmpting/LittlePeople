@@ -42,8 +42,8 @@ public class DefaultEventDrivenPersonManager implements EventDrivenPersonManager
 
     @Override
     public void scheduleChildAddedEvent(ChildAddedEvent event) throws SimulationException {
-        logger.debug("Scheduling child addition event: parent {} child {}",
-                    event.getParentId(), event.getChildId());
+        logger.debug("Scheduling child addition event: parent {} {} child {}",
+                    event.getParentId(),  event.getChildId());
         eventScheduler.scheduleEvent(event);
     }
 
