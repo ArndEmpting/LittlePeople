@@ -35,6 +35,9 @@ The `Person` class will be the central entity in the system, representing an ind
 - Family relationships (partner, parents, children)
 - Life status tracking (alive/deceased)
 
+where suitable (like personality traits, Wealth status and Health status ) those attributes will be represented using enumerations with a numeric value representation. 
+That way we know how strong a certain trait is represented in a person. or how wealthy a person is. or health can detieriorate over time. and health and wealth can change from one state to another.
+
 #### Supporting Enumerations
 
 The system requires several enumerations to model discrete states and characteristics:

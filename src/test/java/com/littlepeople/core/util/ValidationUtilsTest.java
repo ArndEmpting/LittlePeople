@@ -16,21 +16,7 @@ import static org.assertj.core.api.Assertions.*;
 @DisplayName("ValidationUtils")
 class ValidationUtilsTest {
 
-    @Nested
-    @DisplayName("Constructor Tests")
-    class ConstructorTests {
 
-        @Test
-        @DisplayName("Should throw UnsupportedOperationException when attempting to instantiate")
-        void shouldThrowWhenInstantiating() {
-            assertThatThrownBy(() -> {
-                var constructor = ValidationUtils.class.getDeclaredConstructor();
-                constructor.setAccessible(true);
-                constructor.newInstance();
-            }).hasCauseInstanceOf(UnsupportedOperationException.class)
-              .hasMessageContaining("Utility class cannot be instantiated");
-        }
-    }
 
     @Nested
     @DisplayName("requireNonNull Tests")

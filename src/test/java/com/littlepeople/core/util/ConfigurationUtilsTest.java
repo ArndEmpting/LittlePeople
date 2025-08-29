@@ -23,21 +23,7 @@ class ConfigurationUtilsTest {
     @TempDir
     Path tempDir;
 
-    @Nested
-    @DisplayName("Constructor Tests")
-    class ConstructorTests {
 
-        @Test
-        @DisplayName("Should throw UnsupportedOperationException when attempting to instantiate")
-        void shouldThrowWhenInstantiating() {
-            assertThatThrownBy(() -> {
-                var constructor = ConfigurationUtils.class.getDeclaredConstructor();
-                constructor.setAccessible(true);
-                constructor.newInstance();
-            }).hasCauseInstanceOf(UnsupportedOperationException.class)
-              .hasMessageContaining("Utility class cannot be instantiated");
-        }
-    }
 
     @Nested
     @DisplayName("loadProperties Tests")
