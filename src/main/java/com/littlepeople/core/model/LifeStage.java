@@ -56,8 +56,8 @@ public enum LifeStage {
      * career development, family formation, and
      * peak economic and social participation.</p>
      */
-    ADULT(26, 64),
-
+    ADULT(26, 54),
+    SENIOR(55, 74),
     /**
      * Elder stage (65+ years).
      *
@@ -65,7 +65,7 @@ public enum LifeStage {
      * with retirement, increased health concerns, and
      * grandparent roles in family structures.</p>
      */
-    ELDER(65, Integer.MAX_VALUE);
+    ELDER(75, Integer.MAX_VALUE);
 
     private final int minAge;
     private final int maxAge;
@@ -127,6 +127,6 @@ public enum LifeStage {
      * @return true if this stage represents an adult, false otherwise
      */
     public boolean isAdult() {
-        return this == YOUNG_ADULT || this == ADULT || this == ELDER;
+        return this == YOUNG_ADULT || this == ADULT || this == SENIOR || this == ELDER;
     }
 }

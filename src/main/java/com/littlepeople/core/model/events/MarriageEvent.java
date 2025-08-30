@@ -1,4 +1,4 @@
-package com.littlepeople.simulation.partnerships.events;
+package com.littlepeople.core.model.events;
 
 import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.model.EventType;

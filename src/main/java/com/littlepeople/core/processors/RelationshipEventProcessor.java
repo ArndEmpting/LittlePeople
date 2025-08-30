@@ -1,9 +1,10 @@
-package com.littlepeople.core.model.processors;
+package com.littlepeople.core.processors;
 
 import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.interfaces.EventProcessor;
 import com.littlepeople.core.model.EventType;
 import com.littlepeople.core.model.Person;
+import com.littlepeople.core.model.PersonRegistry;
 import com.littlepeople.core.model.events.PartnershipFormedEvent;
 import com.littlepeople.core.model.events.PartnershipDissolvedEvent;
 import com.littlepeople.core.model.events.ChildAddedEvent;
@@ -21,10 +22,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RelationshipEventProcessor implements EventProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(RelationshipEventProcessor.class);
-    private final Map<String, Person> personRegistry;
 
-    public RelationshipEventProcessor(Map<String, Person> personRegistry) {
-        this.personRegistry = personRegistry != null ? personRegistry : new ConcurrentHashMap<>();
+
+    public RelationshipEventProcessor() {
+
     }
 
     @Override
@@ -48,8 +49,8 @@ public class RelationshipEventProcessor implements EventProcessor {
     }
 
     private void processPartnershipFormed(PartnershipFormedEvent event) throws SimulationException {
-        Person person1 = personRegistry.get(event.getPerson1Id().toString());
-        Person person2 = personRegistry.get(event.getPerson2Id().toString());
+        Person person1 = PersonRegistry.get(event.getPerson1Id().toString());
+        Person person2 = PersonRegistry.get(event.getPerson2Id().toString());
 
         if (person1 == null || person2 == null) {
             throw new SimulationException("One or both persons not found for partnership");
@@ -68,8 +69,8 @@ public class RelationshipEventProcessor implements EventProcessor {
     }
 
     private void processPartnershipDissolved(PartnershipDissolvedEvent event) throws SimulationException {
-        Person person1 = personRegistry.get(event.getPerson1Id().toString());
-        Person person2 = personRegistry.get(event.getPerson2Id().toString());
+        Person person1 = PersonRegistry.get(event.getPerson1Id().toString());
+        Person person2 = PersonRegistry.get(event.getPerson2Id().toString());
 
         if (person1 == null || person2 == null) {
             throw new SimulationException("One or both persons not found for partnership dissolution");
@@ -85,8 +86,8 @@ public class RelationshipEventProcessor implements EventProcessor {
     }
 
     private void processChildAdded(ChildAddedEvent event) throws SimulationException {
-        Person parent = personRegistry.get(event.getParentId().toString());
-        Person child = personRegistry.get(event.getChildId().toString());
+        Person parent = PersonRegistry.get(event.getParentId().toString());
+        Person child = PersonRegistry.get(event.getChildId().toString());
 
         if (parent == null || child == null) {
             throw new SimulationException("Parent or child not found for relationship");

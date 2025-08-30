@@ -2,10 +2,14 @@ package com.littlepeople.core.model;
 
 import com.littlepeople.core.interfaces.*;
 import com.littlepeople.core.exceptions.SimulationException;
+import com.littlepeople.core.model.events.TimeChangeEvent;
+import com.littlepeople.simulation.population.PopulationManager;
+import com.littlepeople.simulation.population.PopulationManagerImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,7 +30,6 @@ public class SimulationEngine implements SimulationLifecycle {
     private final SimulationClock clock;
     private final EventScheduler eventScheduler;
     private final EventProcessorRegistry processorRegistry;
-    private final Map<String, Person> personRegistry;
     private SimulationState state;
     private Thread simulationThread;
     private volatile boolean shouldStop;
@@ -46,8 +49,8 @@ public class SimulationEngine implements SimulationLifecycle {
     public SimulationEngine(LocalDateTime startTime) {
         this.clock = new DefaultSimulationClock(startTime);
         this.eventScheduler = new DefaultEventScheduler(clock);
-        this.personRegistry = new ConcurrentHashMap<>();
-        this.processorRegistry = new EventProcessorRegistry(eventScheduler, personRegistry);
+
+        this.processorRegistry = new EventProcessorRegistry(eventScheduler) ;
         this.state = SimulationState.STOPPED;
         this.shouldStop = false;
 
@@ -170,7 +173,7 @@ public class SimulationEngine implements SimulationLifecycle {
             eventScheduler.clear();
 
             // Clear person registry and reinitialize processors
-            personRegistry.clear();
+            PersonRegistry.getPersonRegistry().clear();
             processorRegistry.unregisterAllProcessors();
             processorRegistry.registerAllProcessors();
 
@@ -327,7 +330,7 @@ public class SimulationEngine implements SimulationLifecycle {
      * Main simulation loop that runs in a separate thread.
      */
     private void runSimulation() {
-        logger.debug("Simulation loop started");
+        logger.info("Simulation loop started");
 
         try {
             while (!shouldStop && !Thread.currentThread().isInterrupted()) {
@@ -340,8 +343,16 @@ public class SimulationEngine implements SimulationLifecycle {
                 }
 
                 if (currentState == SimulationState.RUNNING) {
-                    // Advance time by a small increment (1 day)
+                   // Advance time by a small increment (1 day)
+                    LocalDate oldDate= clock.getCurrentTime().toLocalDate();
                     LocalDateTime currentTime = clock.advanceDays(1);
+                    LocalDate newDate= clock.getCurrentTime().toLocalDate();
+                    // make and schedule a TimeChangeEvnt
+
+                    Event timeChangeEvent = new TimeChangeEvent(newDate,oldDate, PopulationManagerImpl.getInstance().getPopulation());
+                    scheduleEvent(timeChangeEvent);
+
+
 
                     // Process any events that are due
                     eventScheduler.processEvents(currentTime);
@@ -381,14 +392,7 @@ public class SimulationEngine implements SimulationLifecycle {
         }
     }
 
-    /**
-     * Gets the person registry.
-     *
-     * @return the person registry
-     */
-    public Map<String, Person> getPersonRegistry() {
-        return personRegistry;
-    }
+
 
     /**
      * Gets the event processor registry.

@@ -1,9 +1,10 @@
-package com.littlepeople.core.model.processors;
+package com.littlepeople.core.processors;
 
 import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.interfaces.EventProcessor;
 import com.littlepeople.core.model.EventType;
 import com.littlepeople.core.model.Person;
+import com.littlepeople.core.model.PersonRegistry;
 import com.littlepeople.core.model.events.PersonDeathEvent;
 import com.littlepeople.core.exceptions.SimulationException;
 import org.slf4j.Logger;
@@ -19,10 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PersonDeathEventProcessor implements EventProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(PersonDeathEventProcessor.class);
-    private final Map<String, Person> personRegistry;
 
-    public PersonDeathEventProcessor(Map<String, Person> personRegistry) {
-        this.personRegistry = personRegistry != null ? personRegistry : new ConcurrentHashMap<>();
+    public PersonDeathEventProcessor() {
     }
 
     @Override
@@ -33,11 +32,12 @@ public class PersonDeathEventProcessor implements EventProcessor {
     @Override
     public void processEvent(Event event) throws SimulationException {
         if (!(event instanceof PersonDeathEvent)) {
-            throw new SimulationException("Expected PersonDeathEvent but got " + event.getClass().getSimpleName());
+            return;
+//            throw new SimulationException("Expected PersonDeathEvent but got " + event.getClass().getSimpleName());
         }
 
         PersonDeathEvent deathEvent = (PersonDeathEvent) event;
-        Person person = personRegistry.get(deathEvent.getPersonId().toString());
+        Person person = PersonRegistry.get(deathEvent.getPersonId().toString());
 
         if (person == null) {
             throw new SimulationException("Person not found: " + deathEvent.getPersonId());

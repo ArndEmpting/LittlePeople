@@ -2,6 +2,7 @@ package com.littlepeople.core.model.events;
 
 import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.model.EventType;
+import com.littlepeople.core.model.Person;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -20,14 +21,14 @@ public class TimeChangeEvent implements Event {
     private final UUID id;
     private final LocalDate newDate;
     private final LocalDate previousDate;
-    private final List<UUID> affectedPersonIds;
+    private final List<Person> affectedPersonIds;
     private final Instant timestamp;
     private final LocalDateTime scheduledTime;
     private final Map<String, Object> data;
     private boolean processed = false;
     private boolean cancelled = false;
 
-    public TimeChangeEvent(LocalDate newDate, LocalDate previousDate, List<UUID> affectedPersonIds) {
+    public TimeChangeEvent(LocalDate newDate, LocalDate previousDate, List<Person> affectedPersonIds) {
         this.id = UUID.randomUUID();
         this.newDate = newDate;
         this.previousDate = previousDate;
@@ -49,7 +50,7 @@ public class TimeChangeEvent implements Event {
 
     @Override
     public EventType getType() {
-        return EventType.SYSTEM;
+        return EventType.LIFECYCLE;
     }
 
     @Override
@@ -110,7 +111,7 @@ public class TimeChangeEvent implements Event {
         return previousDate;
     }
 
-    public List<UUID> getAffectedPersonIds() {
+    public List<Person> getAffectedPersonIds() {
         return affectedPersonIds;
     }
 }

@@ -1,9 +1,10 @@
-package com.littlepeople.core.model.processors;
+package com.littlepeople.core.processors;
 
 import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.interfaces.EventProcessor;
 import com.littlepeople.core.model.EventType;
 import com.littlepeople.core.model.Person;
+import com.littlepeople.core.model.PersonRegistry;
 import com.littlepeople.core.model.events.HealthChangedEvent;
 import com.littlepeople.core.model.events.WealthChangedEvent;
 import com.littlepeople.core.exceptions.SimulationException;
@@ -20,10 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EntityEventProcessor implements EventProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(EntityEventProcessor.class);
-    private final Map<String, Person> personRegistry;
 
-    public EntityEventProcessor(Map<String, Person> personRegistry) {
-        this.personRegistry = personRegistry != null ? personRegistry : new ConcurrentHashMap<>();
+    public EntityEventProcessor() {
     }
 
     @Override
@@ -45,7 +44,7 @@ public class EntityEventProcessor implements EventProcessor {
     }
 
     private void processHealthChanged(HealthChangedEvent event) throws SimulationException {
-        Person person = personRegistry.get(event.getPersonId().toString());
+        Person person = PersonRegistry.get(event.getPersonId().toString());
 
         if (person == null) {
             throw new SimulationException("Person not found: " + event.getPersonId());
@@ -66,7 +65,7 @@ public class EntityEventProcessor implements EventProcessor {
     }
 
     private void processWealthChanged(WealthChangedEvent event) throws SimulationException {
-        Person person = personRegistry.get(event.getPersonId().toString());
+        Person person = PersonRegistry.get(event.getPersonId().toString());
 
         if (person == null) {
             throw new SimulationException("Person not found: " + event.getPersonId());

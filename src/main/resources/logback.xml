@@ -64,7 +64,7 @@
     <!-- Logger configurations -->
 
     <!-- Root logger -->
-    <root level="INFO">
+    <root level="TRACE">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />
         <appender-ref ref="ERROR_FILE" />
@@ -101,7 +101,7 @@
             </filter>
         </appender>
 
-        <logger name="com.littlepeople" level="INFO" additivity="false">
+        <logger name="com.littlepeople" level="TRACE" additivity="false">
             <appender-ref ref="CONSOLE_PROD" />
             <appender-ref ref="FILE" />
             <appender-ref ref="ERROR_FILE" />

@@ -2,10 +2,11 @@ package com.littlepeople.core.model;
 
 import com.littlepeople.core.interfaces.EventProcessor;
 import com.littlepeople.core.interfaces.EventScheduler;
-import com.littlepeople.core.model.processors.PersonDeathEventProcessor;
-import com.littlepeople.core.model.processors.RelationshipEventProcessor;
-import com.littlepeople.core.model.processors.EntityEventProcessor;
+import com.littlepeople.core.processors.PersonDeathEventProcessor;
+import com.littlepeople.core.processors.RelationshipEventProcessor;
+import com.littlepeople.core.processors.EntityEventProcessor;
 import com.littlepeople.core.exceptions.SimulationException;
+import com.littlepeople.simulation.lifecycle.DefaultMortalityProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,18 +25,15 @@ public class EventProcessorRegistry {
     private static final Logger logger = LoggerFactory.getLogger(EventProcessorRegistry.class);
 
     private final EventScheduler eventScheduler;
-    private final Map<String, Person> personRegistry;
     private final List<EventProcessor> registeredProcessors;
 
     /**
      * Creates a new event processor registry.
      *
      * @param eventScheduler the event scheduler to register processors with
-     * @param personRegistry the person registry for processors that need person access
      */
-    public EventProcessorRegistry(EventScheduler eventScheduler, Map<String, Person> personRegistry) {
+    public EventProcessorRegistry(EventScheduler eventScheduler) {
         this.eventScheduler = eventScheduler;
-        this.personRegistry = personRegistry != null ? personRegistry : new ConcurrentHashMap<>();
         this.registeredProcessors = new ArrayList<>();
     }
 
@@ -50,13 +48,15 @@ public class EventProcessorRegistry {
 
         try {
             // Register lifecycle event processors
-            registerProcessor(new PersonDeathEventProcessor(personRegistry));
+            registerProcessor(new PersonDeathEventProcessor());
 
             // Register relationship event processors
-            registerProcessor(new RelationshipEventProcessor(personRegistry));
+            registerProcessor(new RelationshipEventProcessor());
 
             // Register entity event processors
-            registerProcessor(new EntityEventProcessor(personRegistry));
+            registerProcessor(new EntityEventProcessor());
+            registerProcessor(new DefaultMortalityProcessor(eventScheduler));
+            registerProcessor(new PersonDeathEventProcessor());
 
             logger.info("Successfully registered {} event processors", registeredProcessors.size());
 

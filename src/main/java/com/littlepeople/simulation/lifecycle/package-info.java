@@ -19,7 +19,7 @@
  *   <li>{@link com.littlepeople.simulation.lifecycle.MortalityProcessor} - Calculates death probability and processes deaths</li>
  *   <li>{@link com.littlepeople.simulation.lifecycle.MortalityModel} - Interface for mortality probability calculation models</li>
  *   <li>{@link com.littlepeople.simulation.lifecycle.RealisticMortalityModel} - Gompertz-Makeham mortality model implementation</li>
- *   <li>{@link com.littlepeople.simulation.lifecycle.DeathEvent} - Event generated when a person dies</li>
+ *   <li>{@link com.littlepeople.core.model.events.DeathEvent} - Event generated when a person dies</li>
  *   <li>{@link com.littlepeople.simulation.lifecycle.DeathCause} - Enumeration of possible causes of death</li>
  * </ul>
  *

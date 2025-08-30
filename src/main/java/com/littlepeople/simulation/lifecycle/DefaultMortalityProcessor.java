@@ -35,16 +35,14 @@ public class DefaultMortalityProcessor implements MortalityProcessor {
     private final Random random;
     private MortalityModel mortalityModel;
     private final EventScheduler eventScheduler;
-    private final Map<String, Person> personRegistry;
 
     /**
      * Creates a new DefaultMortalityProcessor.
      */
-    public DefaultMortalityProcessor(EventScheduler eventScheduler, Map<String, Person> personRegistry) {
+    public DefaultMortalityProcessor(EventScheduler eventScheduler) {
         this.random = new Random();
         this.mortalityModel = new RealisticMortalityModel();
         this.eventScheduler = eventScheduler;
-        this.personRegistry = personRegistry != null ? personRegistry : new ConcurrentHashMap<>();
 
         logger.info("Initialized DefaultMortalityProcessor with {}",
                 mortalityModel.getModelName());
@@ -55,11 +53,10 @@ public class DefaultMortalityProcessor implements MortalityProcessor {
      *
      * @param randomSeed the seed for random number generation
      */
-    public DefaultMortalityProcessor(long randomSeed, EventScheduler eventScheduler, Map<String, Person> personRegistry) {
+    public DefaultMortalityProcessor(long randomSeed, EventScheduler eventScheduler) {
         this.random = new Random(randomSeed);
         this.mortalityModel = new RealisticMortalityModel();
         this.eventScheduler = eventScheduler;
-        this.personRegistry = personRegistry != null ? personRegistry : new ConcurrentHashMap<>();
 
         logger.info("Initialized DefaultMortalityProcessor with seed {} and {}",
                 randomSeed, mortalityModel.getModelName());
@@ -95,8 +92,7 @@ public class DefaultMortalityProcessor implements MortalityProcessor {
         int deathCount = 0;
         int errorCount = 0;
 
-        for (UUID personId : timeEvent.getAffectedPersonIds()) {
-            Person person = personRegistry.get(personId.toString());
+        for (Person person : timeEvent.getAffectedPersonIds()) {
 
             if (person != null && person.isAlive() && shouldDie(person)) {
                 try {
@@ -117,7 +113,7 @@ public class DefaultMortalityProcessor implements MortalityProcessor {
                             person.getId(), person.getAge(), cause);
 
                 } catch (Exception e) {
-                    logger.error("Error processing death for person: {}", personId, e);
+                    logger.error("Error processing death for person: {}", person.getId(), e);
                     errorCount++;
                 }
             }
