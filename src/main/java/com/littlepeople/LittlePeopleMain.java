@@ -1,7 +1,9 @@
 package com.littlepeople;
 
+import com.littlepeople.core.interfaces.SimulationClock;
 import com.littlepeople.core.model.*;
 import com.littlepeople.core.exceptions.SimulationException;
+import com.littlepeople.core.util.SimulationTimeProvider;
 import com.littlepeople.simulation.population.PopulationConfiguration;
 import com.littlepeople.simulation.population.PopulationManager;
 import com.littlepeople.simulation.population.PopulationManagerFactory;
@@ -24,24 +26,33 @@ import java.util.Random;
 public class LittlePeopleMain {
 
     private static final Logger logger = LoggerFactory.getLogger(LittlePeopleMain.class);
-    private static final int INITIAL_POPULATION_SIZE = 100;
-    private static final int SIMULATION_DURATION_DAYS = 365; // Run for 1 year
+    private static final int INITIAL_POPULATION_SIZE = 1000;
+    private static final int SIMULATION_DURATION_DAYS = 600; // Run for 300 year
     private static final Random random = new Random();
 
     public static void main(String[] args) {
         logger.info("Starting LittlePeople simulation...");
 
         try {
+            // Create simulation engine starting from current time
+            SimulationClock clock = new DefaultSimulationClock(LocalDateTime.now());
+            SimulationTimeProvider.setSimulationClock(clock);
             // Create initial population
             createInitialPopulation();
-            // Create simulation engine starting from current time
-            SimulationEngine engine = new SimulationEngine(LocalDateTime.now());
+
+            logger.info("Initial population has been created " + PopulationManagerImpl.getInstance().getStatistics());
+            logger.info("Initial population has been created " + PopulationManagerImpl.getInstance().getStatistics());
+
+            SimulationEngine engine = new SimulationEngine(clock);
 
 
 
             // Start the simulation
             engine.start();
+            while(!engine.isStopped()) {
+                Thread.sleep(1000);
 
+            }
             // Let simulation run for specified duration
             logger.info("Simulation running for {} days...", SIMULATION_DURATION_DAYS);
             Thread.sleep(SIMULATION_DURATION_DAYS * 50); // Scaled time for demo
@@ -49,6 +60,8 @@ public class LittlePeopleMain {
             // Stop the simulation
             engine.stop();
 
+            PopulationManager populationManager = PopulationManagerImpl.getInstance();
+            logger.info(populationManager.getStatistics().toString());
             // Print final statistics
             printSimulationStatistics(engine);
 
@@ -74,10 +87,12 @@ public class LittlePeopleMain {
 
         PopulationManager populationManager = PopulationManagerImpl.getInstance();
 
-        populationManager.initializePopulation(PopulationManagerFactory.createDefaultConfiguration(100));
+        populationManager.initializePopulation(PopulationManagerFactory.createDefaultConfiguration(INITIAL_POPULATION_SIZE));
 
         logger.info("Initial population created successfully with {} people",
                 PersonRegistry.getPersonRegistry().size());
+        populationManager.getStatistics();
+        populationManager.validatePopulation();
     }
 
     /**

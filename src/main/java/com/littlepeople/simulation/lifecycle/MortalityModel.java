@@ -18,7 +18,7 @@ public interface MortalityModel {
      * @return the baseline probability of death (0.0 to 1.0)
      */
     double calculateBaselineProbability(int age);
-
+    public double calculateBaselineProbability(int age, TimeUnit timeUnit);
     /**
      * Adjusts the baseline death probability based on health status.
      *
@@ -41,4 +41,12 @@ public interface MortalityModel {
      * @return the model type
      */
     MortalityModelType getModelType();
+    /**
+     * Enumeration for time units supported by the mortality model.
+     */
+    public enum TimeUnit {
+        DAY,
+        MONTH,
+        YEAR
+    }
 }

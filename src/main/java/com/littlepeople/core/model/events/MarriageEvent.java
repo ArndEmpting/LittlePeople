@@ -19,7 +19,7 @@ import java.util.UUID;
  * @since 1.0.0
  * @version 1.0.0
  */
-public class MarriageEvent implements Event {
+public class MarriageEvent implements PartnershipEvent {
 
     private final UUID id;
     private final UUID person1Id;

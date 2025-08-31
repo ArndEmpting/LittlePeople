@@ -5,6 +5,7 @@ import com.littlepeople.core.interfaces.EventProcessor;
 import com.littlepeople.core.model.EventType;
 import com.littlepeople.core.model.Person;
 import com.littlepeople.core.model.PersonRegistry;
+import com.littlepeople.core.model.events.PartnershipEvent;
 import com.littlepeople.core.model.events.PartnershipFormedEvent;
 import com.littlepeople.core.model.events.PartnershipDissolvedEvent;
 import com.littlepeople.core.model.events.ChildAddedEvent;
@@ -19,19 +20,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * Event processor for handling relationship events.
  * This processor manages partnerships and family relationships.
  */
-public class RelationshipEventProcessor implements EventProcessor {
+public class RelationshipEventProcessor extends AbstractEventProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(RelationshipEventProcessor.class);
 
 
     public RelationshipEventProcessor() {
-
+        super(PartnershipEvent.class);
     }
 
-    @Override
-    public EventType getEventType() {
-        return EventType.RELATIONSHIP;
-    }
 
     @Override
     public void processEvent(Event event) throws SimulationException {
@@ -156,10 +153,6 @@ public class RelationshipEventProcessor implements EventProcessor {
         return false;
     }
 
-    @Override
-    public boolean canProcess(EventType eventType) {
-        return EventType.RELATIONSHIP.equals(eventType);
-    }
 
     @Override
     public int getPriority() {

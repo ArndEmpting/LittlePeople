@@ -107,5 +107,5 @@ public interface EventScheduler {
      *
      * @param eventType the event type to unregister
      */
-    void unregisterProcessor(EventType eventType);
+    void unregisterProcessor(Class<? extends Event> eventType);
 }

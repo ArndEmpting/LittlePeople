@@ -17,21 +17,18 @@ import java.util.concurrent.ConcurrentHashMap;
  * Event processor for handling person death events.
  * This processor manages the actual state changes when a person dies.
  */
-public class PersonDeathEventProcessor implements EventProcessor {
+public class PersonDeathEventProcessor extends AbstractEventProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(PersonDeathEventProcessor.class);
 
     public PersonDeathEventProcessor() {
+        super(PersonDeathEvent.class);
     }
 
-    @Override
-    public EventType getEventType() {
-        return EventType.LIFECYCLE;
-    }
 
     @Override
     public void processEvent(Event event) throws SimulationException {
-        if (!(event instanceof PersonDeathEvent)) {
+        if (!canProcess(event.getClass())) {
             return;
 //            throw new SimulationException("Expected PersonDeathEvent but got " + event.getClass().getSimpleName());
         }
@@ -58,17 +55,13 @@ public class PersonDeathEventProcessor implements EventProcessor {
             partner.setPartner(null);
         }
 
-        logger.info("Processed death event for person: {} {} (Age: {}, Cause: {})",
+        logger.info("Processed death event for person: {} {} (Age: {}, Cause: {}), Family: {}",
                    person.getFirstName(), person.getLastName(), person.getAge(),
-                   deathEvent.getDeathCause().getDescription());
+                   deathEvent.getDeathCause().getDescription(), person.getChildren().size());
 
         event.markProcessed();
     }
 
-    @Override
-    public boolean canProcess(EventType eventType) {
-        return EventType.LIFECYCLE.equals(eventType);
-    }
 
     @Override
     public int getPriority() {

@@ -32,6 +32,7 @@ public class DemographicStatistics {
     private final int totalFamilies;
     private final int totalPartnerships;
     private final double averageChildrenPerFamily;
+    private final int maxChildrenInFamily;
     private final long statisticsTimestamp;
 
     private DemographicStatistics(Builder builder) {
@@ -48,6 +49,7 @@ public class DemographicStatistics {
         this.totalPartnerships = builder.totalPartnerships;
         this.averageChildrenPerFamily = builder.averageChildrenPerFamily;
         this.statisticsTimestamp = System.currentTimeMillis();
+        this.maxChildrenInFamily = builder.maxChildrenInFamily;
     }
 
     /**
@@ -279,15 +281,19 @@ public class DemographicStatistics {
     @Override
     public String toString() {
         return "DemographicStatistics{" +
-               "total=" + totalPopulation +
-               ", living=" + livingPopulation +
-               ", deceased=" + deceasedPopulation +
-               ", avgAge=" + String.format("%.1f", averageAge) +
-               ", medianAge=" + medianAge +
-               ", families=" + totalFamilies +
-               ", partnerships=" + totalPartnerships +
-               ", avgChildren=" + String.format("%.1f", averageChildrenPerFamily) +
-               '}';
+                "totalPopulation=" + totalPopulation +
+                ", livingPopulation=" + livingPopulation +
+                ", deceasedPopulation=" + deceasedPopulation +
+                ", genderCounts=" + genderCounts +
+                ", ageGroupCounts=" + ageGroupCounts +
+                ", averageAge=" + averageAge +
+                ", medianAge=" + medianAge +
+                ", maxAge=" + maxAge +
+                ", totalFamilies=" + totalFamilies +
+                ", totalPartnerships=" + totalPartnerships +
+                ", averageChildrenPerFamily=" + averageChildrenPerFamily +
+                ", maxChildrenInFamily=" + maxChildrenInFamily +
+                '}';
     }
 
     /**
@@ -315,6 +321,7 @@ public class DemographicStatistics {
         private int totalFamilies = 0;
         private int totalPartnerships = 0;
         private double averageChildrenPerFamily = 0.0;
+        private int maxChildrenInFamily = 0;
 
         private Builder() {
             // Initialize gender counts
@@ -388,6 +395,10 @@ public class DemographicStatistics {
             return this;
         }
 
+        public Builder maxChildrenInFamily(int max) {
+            this.maxChildrenInFamily = max;
+            return this;
+        }
         public DemographicStatistics build() {
             return new DemographicStatistics(this);
         }

@@ -3,12 +3,13 @@ package com.littlepeople.simulation.partnerships;
 import com.littlepeople.core.exceptions.SimulationException;
 import com.littlepeople.core.interfaces.EventProcessor;
 import com.littlepeople.core.interfaces.Event;
-import com.littlepeople.core.model.Person;
-import com.littlepeople.core.model.Gender;
-import com.littlepeople.core.model.PersonBuilder;
-import com.littlepeople.core.model.PersonalityTrait;
-import com.littlepeople.core.model.EventType;
+import com.littlepeople.core.interfaces.EventScheduler;
+import com.littlepeople.core.model.*;
 import com.littlepeople.core.model.events.ChildAddedEvent;
+import com.littlepeople.core.model.events.FamilyCalculationEvent;
+import com.littlepeople.core.model.events.PartnershipCalculationEvent;
+import com.littlepeople.core.processors.AbstractEventProcessor;
+import com.littlepeople.simulation.population.PopulationManagerImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,38 +43,42 @@ import java.util.*;
  *   <li><strong>Health:</strong> Generally healthy with small chance of complications</li>
  * </ul>
  *
- * @since 1.0.0
  * @version 1.0.0
+ * @since 1.0.0
  */
-public class FamilyProcessor implements EventProcessor {
+public class FamilyProcessor extends AbstractEventProcessor implements EventProcessor {
 
     public static final double DOMINANT_PARENT_INFLUENCE = 0.8;
     public static final double MINOR_PARENT_INFLUENCE = 0.2;
     private static final Logger logger = LoggerFactory.getLogger(FamilyProcessor.class);
 
-    private final FertilityCalculator fertilityCalculator;
+    private final FertilityCalculatorInterface fertilityCalculator;
     private final Random random;
 
     // Configuration parameters
     private static final int PREGNANCY_DURATION_MONTHS = 9;
     private static final double TRAIT_INHERITANCE_VARIATION = 0.2; // 20% random variation
     private static final double BIRTH_COMPLICATION_RATE = 0.05; // 5% chance of complications
+    EventScheduler eventScheduler;
 
     /**
      * Creates a new family processor with default configuration.
      */
-    public FamilyProcessor() {
-        this.fertilityCalculator = new FertilityCalculator();
+    public FamilyProcessor(EventScheduler eventScheduler) {
+        super(FamilyCalculationEvent.class);
+        this.fertilityCalculator = new MedievalFertilityCalculator();
         this.random = new Random();
+        this.eventScheduler = eventScheduler;
     }
 
     /**
      * Creates a new family processor with custom configuration.
      *
      * @param fertilityCalculator custom fertility calculator
-     * @param random random number generator for reproducible testing
+     * @param random              random number generator for reproducible testing
      */
-    public FamilyProcessor(FertilityCalculator fertilityCalculator, Random random) {
+    public FamilyProcessor(FertilityCalculatorInterface fertilityCalculator, Random random) {
+        super(FamilyCalculationEvent.class);
         this.fertilityCalculator = fertilityCalculator;
         this.random = random;
     }
@@ -85,7 +90,7 @@ public class FamilyProcessor implements EventProcessor {
      * calculates conception probabilities based on fertility factors, and
      * creates child events for successful conceptions.</p>
      *
-     * @param population the current population
+     * @param population  the current population
      * @param currentDate the current simulation date
      * @return list of child birth events created during this cycle
      * @throws SimulationException if processing fails
@@ -105,26 +110,26 @@ public class FamilyProcessor implements EventProcessor {
         try {
             // Find all eligible couples
             List<Partnership> eligibleCouples = findEligibleCouples(population);
-            logger.debug("Found {} eligible couples for family formation", eligibleCouples.size());
+            logger.info("Found {} eligible couples for family formation", eligibleCouples.size());
 
             for (Partnership couple : eligibleCouples) {
                 // Calculate conception probability for this month
                 double conceptionProbability = fertilityCalculator.calculateMonthlyConceptionProbability(
-                    couple.malePartner, couple.femalePartner);
+                        couple.malePartner, couple.femalePartner);
 
                 if (conceptionProbability > 0.0 && random.nextDouble() < conceptionProbability) {
                     // Conception successful - create child
                     Person child = createChild(couple.malePartner, couple.femalePartner, currentDate);
-
+                    PersonRegistry.add(child);
                     // Create birth event
                     ChildAddedEvent birthEvent = new ChildAddedEvent(
-                        couple.malePartner.getId(),
-                        child.getId());
+                            couple.malePartner.getId(),
+                            child.getId());
 
                     birthEvents.add(birthEvent);
 
                     logger.info("Child {} born to parents {} and {}",
-                               child.getId(), couple.malePartner.getId(), couple.femalePartner.getId());
+                            child.getFullName(), couple.malePartner.getFullName(), couple.femalePartner.getFullName());
                 }
             }
 
@@ -140,8 +145,8 @@ public class FamilyProcessor implements EventProcessor {
     /**
      * Creates a child with genetic traits inherited from both parents.
      *
-     * @param father the father
-     * @param mother the mother
+     * @param father    the father
+     * @param mother    the mother
      * @param birthDate the child's birth date
      * @return the newly created child
      * @throws SimulationException if child creation fails
@@ -176,14 +181,14 @@ public class FamilyProcessor implements EventProcessor {
             // Establish family relationships
             establishFamilyRelationships(child, father, mother);
 
-            logger.debug("Child created: {} {} ({}), born to {} and {}",
-                        firstName, lastName, gender, father.getId(), mother.getId());
+            logger.debug("Child created: {} {} ({}), born to {} and {} : family.size={}",
+                    firstName, lastName, gender, father.getId(), mother.getId(), mother.getChildren().size());
 
             return child;
 
         } catch (Exception e) {
             logger.error("Failed to create child for parents {} and {}",
-                        father.getId(), mother.getId(), e);
+                    father.getId(), mother.getId(), e);
             throw new SimulationException("Failed to create child", e);
         }
     }
@@ -264,7 +269,7 @@ public class FamilyProcessor implements EventProcessor {
             Integer motherValue = motherTraits.get(trait);
 
             if (fatherValue != null && motherValue != null) {
-                   // Randomly choose which parent is dominant
+                // Randomly choose which parent is dominant
                 boolean fatherDominant = random.nextBoolean();
                 double dominantValue = fatherDominant ? fatherValue : motherValue;
                 double minorValue = fatherDominant ? motherValue : fatherValue;
@@ -273,17 +278,29 @@ public class FamilyProcessor implements EventProcessor {
                 double baseInheritance = (dominantValue * DOMINANT_PARENT_INFLUENCE) +
                         (minorValue * MINOR_PARENT_INFLUENCE);
                 // Add individual variation of ±20%
-                int inheritedValue = traitVariation(baseInheritance);
+                int inheritedValue = trimValue(traitVariation(baseInheritance));
                 inheritedTraits.put(trait, inheritedValue);
             } else if (fatherValue != null) {
-                inheritedTraits.put(trait, traitVariation(fatherValue));
+                inheritedTraits.put(trait, trimValue(traitVariation(fatherValue)));
             } else if (motherValue != null) {
-                inheritedTraits.put(trait, traitVariation(motherValue));
+                inheritedTraits.put(trait, trimValue(traitVariation(motherValue)));
 
             }
         }
         return inheritedTraits;
     }
+
+
+    private Integer trimValue(Integer value) {
+        if (value < 0) {
+            return 0;
+        } else if (value > 100) {
+            return 100;
+        } else {
+            return value;
+        }
+    }
+
 
     private int traitVariation(double baseInheritance) {
         double variationRange = baseInheritance * TRAIT_INHERITANCE_VARIATION;
@@ -337,7 +354,7 @@ public class FamilyProcessor implements EventProcessor {
     /**
      * Establishes bidirectional family relationships between child and parents.
      *
-     * @param child the child
+     * @param child  the child
      * @param father the father
      * @param mother the mother
      */
@@ -349,14 +366,10 @@ public class FamilyProcessor implements EventProcessor {
         mother.addChild(child);
 
         logger.debug("Family relationships established: {} is child of {} and {}",
-                    child.getId(), father.getId(), mother.getId());
+                child.getId(), father.getId(), mother.getId());
     }
 
     // EventProcessor interface implementation
-    @Override
-    public EventType getEventType() {
-        return EventType.LIFECYCLE;
-    }
 
     @Override
     public void processEvent(Event event) throws SimulationException {
@@ -364,15 +377,21 @@ public class FamilyProcessor implements EventProcessor {
             throw new IllegalArgumentException("Event cannot be null");
         }
 
-        EventType eventType = event.getType();
-        if (!canProcess(eventType)) {
-            throw new SimulationException("Cannot process event type: " + eventType);
+
+        if (!canProcess(event.getClass())) {
+            throw new SimulationException("Cannot process event type: " + event.getClass());
         }
 
-        logger.debug("Processing event: {} of type: {}", event.getId(), eventType);
+        logger.debug("Processing event: {} of type: {}", event.getId(), event.getClass());
+        if (event instanceof FamilyCalculationEvent) {
+            List<ChildAddedEvent> childAddedEvents = processFamilyFormation(PopulationManagerImpl.getInstance().getPopulation()
+                    , ((FamilyCalculationEvent) event).getScheduledTime().toLocalDate());
 
+
+
+        }
         // Handle family-related events
-        if (event instanceof ChildAddedEvent) {
+        else if (event instanceof ChildAddedEvent) {
             ChildAddedEvent childEvent = (ChildAddedEvent) event;
             logger.info("Processing child birth event: {}", childEvent.getId());
             // Event is already processed during creation, just mark as complete
@@ -384,10 +403,6 @@ public class FamilyProcessor implements EventProcessor {
         event.markProcessed();
     }
 
-    @Override
-    public boolean canProcess(EventType eventType) {
-        return eventType == EventType.LIFECYCLE;
-    }
 
     @Override
     public int getPriority() {

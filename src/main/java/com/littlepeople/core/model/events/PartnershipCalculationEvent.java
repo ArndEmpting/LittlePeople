@@ -4,38 +4,30 @@ import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.model.EventType;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Event representing the formation of a partnership between two people.
- * This event contains the IDs of both partners and ensures bidirectional
- * relationship establishment.
+ * Event zur Auslösung von Partnerschaftsberechnungen im Simulationszyklus.
  */
-public class PartnershipFormedEvent implements PartnershipEvent {
+public class PartnershipCalculationEvent implements Event {
 
     private final UUID id;
-    private final UUID person1Id;
-    private final UUID person2Id;
-    private final Instant timestamp;
     private final LocalDateTime scheduledTime;
     private final Map<String, Object> data;
     private boolean processed = false;
     private boolean cancelled = false;
+    private final Instant timestamp;
 
-    public PartnershipFormedEvent(UUID person1Id, UUID person2Id) {
+
+    public PartnershipCalculationEvent(LocalDate calculationDate) {
         this.id = UUID.randomUUID();
-        this.person1Id = person1Id;
-        this.person2Id = person2Id;
         this.timestamp = Instant.now();
         this.scheduledTime = LocalDateTime.now();
-
         this.data = new HashMap<>();
-        this.data.put("person1Id", person1Id.toString());
-        this.data.put("person2Id", person2Id.toString());
-        this.data.put("eventType", "PARTNERSHIP_FORMED");
     }
 
     @Override
@@ -43,9 +35,10 @@ public class PartnershipFormedEvent implements PartnershipEvent {
         return id;
     }
 
+
     @Override
     public EventType getType() {
-        return EventType.RELATIONSHIP;
+        return EventType.LIFECYCLE;
     }
 
     @Override
@@ -55,7 +48,7 @@ public class PartnershipFormedEvent implements PartnershipEvent {
 
     @Override
     public UUID getSourceId() {
-        return person1Id;
+        return null; // System event
     }
 
     @Override
@@ -70,7 +63,7 @@ public class PartnershipFormedEvent implements PartnershipEvent {
 
     @Override
     public String getTargetEntityId() {
-        return person1Id.toString();
+        return "POPULATION"; // Affects entire population
     }
 
     @Override
@@ -98,12 +91,6 @@ public class PartnershipFormedEvent implements PartnershipEvent {
         this.cancelled = true;
     }
 
-    // Getters for specific data
-    public UUID getPerson1Id() {
-        return person1Id;
-    }
 
-    public UUID getPerson2Id() {
-        return person2Id;
-    }
+
 }

@@ -2,7 +2,7 @@
 <configuration>
 
     <!-- Define properties for log file paths -->
-    <property name="LOG_DIR" value="${user.home}/.littlepeople/logs" />
+    <property name="LOG_DIR" value="littlepeople/logs" />
     <property name="LOG_FILE" value="${LOG_DIR}/littlepeople.log" />
 
     <!-- Define common pattern -->

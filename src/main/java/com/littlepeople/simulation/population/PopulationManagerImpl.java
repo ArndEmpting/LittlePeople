@@ -2,14 +2,15 @@ package com.littlepeople.simulation.population;
 
 import com.littlepeople.core.model.Person;
 import com.littlepeople.core.exceptions.SimulationException;
+import com.littlepeople.core.model.PersonRegistry;
 import com.littlepeople.core.model.events.EmigrationEvent;
 import com.littlepeople.core.model.events.ImmigrationEvent;
 import com.littlepeople.core.model.events.PopulationInitializedEvent;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
@@ -28,7 +29,7 @@ public class PopulationManagerImpl implements PopulationManager {
     private final PopulationGenerator generator;
     private final PopulationGrowthController growthController;
     private final DemographicValidator validator;
-    private final List<Person> population;
+
     private PopulationConfiguration configuration;
     private boolean initialized = false;
     static PopulationManager instance = new PopulationManagerImpl();
@@ -42,7 +43,6 @@ public class PopulationManagerImpl implements PopulationManager {
         this.generator = new PopulationGenerator();
         this.growthController = new PopulationGrowthController(generator);
         this.validator = new DemographicValidator();
-        this.population = new CopyOnWriteArrayList<>();
     }
 
     /**
@@ -58,7 +58,6 @@ public class PopulationManagerImpl implements PopulationManager {
         this.generator = generator;
         this.growthController = growthController;
         this.validator = validator;
-        this.population = new CopyOnWriteArrayList<>();
     }
 
     @Override
@@ -79,7 +78,7 @@ public class PopulationManagerImpl implements PopulationManager {
         List<Person> initialInhabitants = generator.generateInitialPopulation(config, startDate);
 
         // Add to population
-        .addAll(initialInhabitants);
+        PersonRegistry.addAll(initialInhabitants);
         initialized = true;
 
         // Fire population initialized event
@@ -157,7 +156,7 @@ public class PopulationManagerImpl implements PopulationManager {
             throw new IllegalStateException("Population is not initialized");
         }
 
-        return (int) population.stream().filter(Person::isAlive).count();
+        return (int) PersonRegistry.getPersonRegistry().values().stream().filter(Person::isAlive).count();
     }
 
     @Override
@@ -179,7 +178,7 @@ public class PopulationManagerImpl implements PopulationManager {
             throw new IllegalArgumentException("Criteria cannot be null");
         }
 
-        return population.stream()
+        return PersonRegistry.getPersonRegistry().values().stream()
                 .filter(person -> matchesCriteria(person, criteria))
                 .collect(Collectors.toList());
     }
@@ -194,11 +193,11 @@ public class PopulationManagerImpl implements PopulationManager {
             throw new IllegalArgumentException("Person cannot be null");
         }
 
-        if (population.contains(person)) {
+        if (PersonRegistry.contains(person)) {
             throw new IllegalArgumentException("Person is already in the population");
         }
 
-        population.add(person);
+        PersonRegistry.add(person);
     }
 
     @Override
@@ -211,11 +210,11 @@ public class PopulationManagerImpl implements PopulationManager {
             throw new IllegalArgumentException("Person cannot be null");
         }
 
-        if (!population.contains(person)) {
+        if (!PersonRegistry.contains(person)) {
             throw new IllegalArgumentException("Person is not in the population");
         }
 
-        population.remove(person);
+        PersonRegistry.getPersonRegistry().remove(person.getId());
     }
 
     @Override
@@ -224,7 +223,7 @@ public class PopulationManagerImpl implements PopulationManager {
             throw new IllegalStateException("Population is not initialized");
         }
 
-        return validator.validatePopulation(population, configuration.getDemographicDistribution());
+        return validator.validatePopulation(new ArrayList<>(PersonRegistry.getPersonRegistry().values()), configuration.getDemographicDistribution());
     }
 
     @Override
@@ -247,7 +246,7 @@ public class PopulationManagerImpl implements PopulationManager {
      * @return list of living inhabitants
      */
     private List<Person> getLivingPopulation() {
-        return population.stream()
+        return PersonRegistry.getPersonRegistry().values().stream()
                 .filter(Person::isAlive)
                 .collect(Collectors.toList());
     }
@@ -332,9 +331,9 @@ public class PopulationManagerImpl implements PopulationManager {
         List<Person> living = getLivingPopulation();
 
         DemographicStatistics.Builder builder = DemographicStatistics.builder()
-                .totalPopulation(population.size())
+                .totalPopulation(PersonRegistry.getPersonRegistry().values().size())
                 .livingPopulation(living.size())
-                .deceasedPopulation(population.size() - living.size());
+                .deceasedPopulation(PersonRegistry.getPersonRegistry().values().size() - living.size());
 
         if (living.isEmpty()) {
             return builder.build();
@@ -373,9 +372,15 @@ public class PopulationManagerImpl implements PopulationManager {
                 .average()
                 .orElse(0.0);
 
+        int maxChildren = living.stream()
+                .mapToInt(p -> p.getChildren().size())
+                .max()
+                .orElse(0);
+
         builder.totalPartnerships((int) partnerships)
                .totalFamilies((int) families)
-               .averageChildrenPerFamily(avgChildren);
+               .averageChildrenPerFamily(avgChildren)
+        .maxChildrenInFamily(maxChildren);
 
         return builder.build();
     }

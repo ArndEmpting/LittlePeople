@@ -7,8 +7,9 @@ import com.littlepeople.core.model.DeathCause;
 import com.littlepeople.core.model.EventType;
 import com.littlepeople.core.model.HealthStatus;
 import com.littlepeople.core.model.Person;
-import com.littlepeople.core.model.events.TimeChangeEvent;
+import com.littlepeople.core.model.events.MortalityCalculationEvent;
 import com.littlepeople.core.model.events.PersonDeathEvent;
+import com.littlepeople.core.processors.AbstractEventProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version 1.0
  * @since 1.0
  */
-public class DefaultMortalityProcessor implements MortalityProcessor {
+public class DefaultMortalityProcessor extends AbstractEventProcessor implements MortalityProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultMortalityProcessor.class);
 
@@ -40,8 +41,9 @@ public class DefaultMortalityProcessor implements MortalityProcessor {
      * Creates a new DefaultMortalityProcessor.
      */
     public DefaultMortalityProcessor(EventScheduler eventScheduler) {
+        super(MortalityCalculationEvent.class);
         this.random = new Random();
-        this.mortalityModel = new RealisticMortalityModel();
+        this.mortalityModel = new MedievalMortalityModel();
         this.eventScheduler = eventScheduler;
 
         logger.info("Initialized DefaultMortalityProcessor with {}",
@@ -54,45 +56,37 @@ public class DefaultMortalityProcessor implements MortalityProcessor {
      * @param randomSeed the seed for random number generation
      */
     public DefaultMortalityProcessor(long randomSeed, EventScheduler eventScheduler) {
+        super(MortalityCalculationEvent.class);
         this.random = new Random(randomSeed);
-        this.mortalityModel = new RealisticMortalityModel();
+        this.mortalityModel = new MedievalMortalityModel();
         this.eventScheduler = eventScheduler;
 
         logger.info("Initialized DefaultMortalityProcessor with seed {} and {}",
                 randomSeed, mortalityModel.getModelName());
     }
 
-    @Override
-    public EventType getEventType() {
-        return EventType.LIFECYCLE;
-    }
-
-    @Override
-    public boolean canProcess(EventType eventType) {
-        return eventType == EventType.LIFECYCLE;
-    }
 
     @Override
     public void processEvent(Event event) throws SimulationException {
-        if (event instanceof TimeChangeEvent) {
-            TimeChangeEvent timeEvent = (TimeChangeEvent) event;
-            processTimeChange(timeEvent);
+        if (event instanceof MortalityCalculationEvent) {
+            MortalityCalculationEvent mortalityEvent = (MortalityCalculationEvent) event;
+            processMortalityCalculation(mortalityEvent);
         } else {
             logger.warn("Received unsupported event type: {}", event.getClass().getSimpleName());
         }
     }
 
     /**
-     * Processes a time change event by checking mortality for all affected persons.
+     * Processes a mortality calculation event by checking mortality for all persons in the population.
      */
-    private void processTimeChange(TimeChangeEvent timeEvent) throws SimulationException {
-        logger.debug("Processing time change from {} to {}",
-                    timeEvent.getPreviousDate(), timeEvent.getNewDate());
+    private void processMortalityCalculation(MortalityCalculationEvent mortalityEvent) throws SimulationException {
+        logger.debug("Processing mortality calculation from {} to {}",
+                    mortalityEvent.getPreviousDate(), mortalityEvent.getCurrentDate());
 
         int deathCount = 0;
         int errorCount = 0;
 
-        for (Person person : timeEvent.getAffectedPersonIds()) {
+        for (Person person : mortalityEvent.getPopulation()) {
 
             if (person != null && person.isAlive() && shouldDie(person)) {
                 try {
@@ -102,7 +96,7 @@ public class DefaultMortalityProcessor implements MortalityProcessor {
                     // Create and schedule death event instead of direct change
                     PersonDeathEvent deathEvent = new PersonDeathEvent(
                         person.getId(),
-                        timeEvent.getNewDate(),
+                        mortalityEvent.getCurrentDate(),
                         cause
                     );
 
@@ -120,9 +114,9 @@ public class DefaultMortalityProcessor implements MortalityProcessor {
         }
 
         logger.info("Scheduled {} death events out of {} persons on {} ({} errors)",
-                deathCount, timeEvent.getAffectedPersonIds().size(), timeEvent.getNewDate(), errorCount);
+                deathCount, mortalityEvent.getPopulation().size(), mortalityEvent.getCurrentDate(), errorCount);
 
-        timeEvent.markProcessed();
+        mortalityEvent.markProcessed();
     }
 
     @Override
@@ -142,12 +136,14 @@ public class DefaultMortalityProcessor implements MortalityProcessor {
         }
 
         // Get base probability from mortality model
-        double baselineProbability = mortalityModel.calculateBaselineProbability(person.getAge());
+        double baselineProbability = mortalityModel.calculateBaselineProbability(person.getAge(), MortalityModel.TimeUnit.MONTH);
 
         // Adjust for health status if available
         HealthStatus healthStatus = getPersonHealthStatus(person);
         double adjustedProbability = mortalityModel.adjustForHealth(
                 baselineProbability, healthStatus);
+
+
 
         logger.trace("Death probability for {} (age {}): baseline={}, adjusted={}",
                 person.getId(), person.getAge(), baselineProbability, adjustedProbability);
@@ -167,7 +163,7 @@ public class DefaultMortalityProcessor implements MortalityProcessor {
         boolean result = roll < probability;
 
         if (result) {
-            logger.debug("Person {} (age {}) will die (probability: {:.6f}, roll: {:.6f})",
+            logger.debug("Person {} (age {}) will die (probability: {}, roll: {})",
                     person.getId(), person.getAge(), probability, roll);
         }
 

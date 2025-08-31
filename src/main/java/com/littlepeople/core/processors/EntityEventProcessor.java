@@ -18,21 +18,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * Event processor for handling entity property changes.
  * This processor manages health, wealth, and other personal attribute changes.
  */
-public class EntityEventProcessor implements EventProcessor {
+public class EntityEventProcessor extends AbstractEventProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(EntityEventProcessor.class);
-
     public EntityEventProcessor() {
+      super(HealthChangedEvent.class);
     }
 
-    @Override
-    public EventType getEventType() {
-        return EventType.ENTITY;
-    }
 
     @Override
     public void processEvent(Event event) throws SimulationException {
-        if (event instanceof HealthChangedEvent) {
+        if(canProcess(event.getClass())) {
             processHealthChanged((HealthChangedEvent) event);
         } else if (event instanceof WealthChangedEvent) {
             processWealthChanged((WealthChangedEvent) event);
@@ -58,7 +54,7 @@ public class EntityEventProcessor implements EventProcessor {
         // Perform the actual state change - direct field access
         person.setHealthStatus(event.getNewHealthStatus());
 
-        logger.info("Processed health change for person: {} {} from {} to {}",
+        logger.trace("Processed health change for person: {} {} from {} to {}",
                    person.getFirstName(), person.getLastName(),
                    event.getPreviousHealthStatus() != null ? event.getPreviousHealthStatus().name() : "unknown",
                    event.getNewHealthStatus().name());
@@ -83,11 +79,6 @@ public class EntityEventProcessor implements EventProcessor {
                    person.getFirstName(), person.getLastName(),
                    event.getPreviousWealthStatus() != null ? event.getPreviousWealthStatus().name() : "unknown",
                    event.getNewWealthStatus().name());
-    }
-
-    @Override
-    public boolean canProcess(EventType eventType) {
-        return EventType.ENTITY.equals(eventType);
     }
 
     @Override

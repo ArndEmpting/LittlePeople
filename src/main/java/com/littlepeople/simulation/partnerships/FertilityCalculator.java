@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * @since 1.0.0
  * @version 1.0.0
  */
-public class FertilityCalculator {
+public class FertilityCalculator implements FertilityCalculatorInterface {
 
     private static final Logger logger = LoggerFactory.getLogger(FertilityCalculator.class);
 
@@ -46,6 +46,7 @@ public class FertilityCalculator {
     private static final int SIGNIFICANT_DECLINE_START = 35;
     private static final int LATE_FERTILITY_END = 45;
     private static final int MAX_FERTILE_AGE = 50; // Extreme cases
+    private static final int MAX_MALE_FERTILE_AGE = 70; // Extreme cases
 
     // Base fertility rates (monthly probability)
     private static final double PEAK_FERTILITY_RATE = 0.20; // 20% chance per month
@@ -111,6 +112,9 @@ public class FertilityCalculator {
      * @return annual conception probability (0.0 to 1.0)
      */
     public double calculateAnnualConceptionProbability(Person malePartner, Person femalePartner) {
+        if(!isFertile(femalePartner)){
+            return  0.0;
+        }
         double monthlyProbability = calculateMonthlyConceptionProbability(malePartner, femalePartner);
 
         // Calculate probability of NOT conceiving each month for 12 months
@@ -126,6 +130,7 @@ public class FertilityCalculator {
      * @param person the person to evaluate
      * @return true if the person is fertile
      */
+    @Override
     public boolean isFertile(Person person) {
         if (person == null || !person.isAlive()) {
             return false;
@@ -134,7 +139,11 @@ public class FertilityCalculator {
         int age = person.getAge();
 
         // Age-based fertility check
-        if (age < MIN_FERTILE_AGE || age > MAX_FERTILE_AGE) {
+        if (person.getGender() == Gender.FEMALE && (age < MIN_FERTILE_AGE || age > MAX_FERTILE_AGE)) {
+            return false;
+        }
+       // Age-based fertility check
+        if (person.getGender() == Gender.MALE && (age < MIN_FERTILE_AGE || age > MAX_MALE_FERTILE_AGE)) {
             return false;
         }
 
@@ -146,6 +155,10 @@ public class FertilityCalculator {
         // Gender-specific checks
         if (person.getGender() == Gender.FEMALE && age > LATE_FERTILITY_END) {
             return false; // Post-menopause
+        }
+        // Gender-specific checks
+        if (person.getGender() == Gender.FEMALE && person.getChildren().stream().anyMatch(child -> child.getAge() == 0)) {
+            return false; // nursing or pregnant
         }
 
         return true;

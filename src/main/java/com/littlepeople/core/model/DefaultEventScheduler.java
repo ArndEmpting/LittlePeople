@@ -29,7 +29,8 @@ public class DefaultEventScheduler implements EventScheduler {
 
     private final PriorityBlockingQueue<Event> eventQueue;
     private final Map<UUID, Event> eventMap;
-    private final Map<EventType, EventProcessor> processors;
+    private final Map<Class<? extends Event>, EventProcessor> processors ;
+
     private final SimulationClock simulationClock;
 
     /**
@@ -143,15 +144,16 @@ public class DefaultEventScheduler implements EventScheduler {
                 processEvent(event);
             } catch (Exception e) {
                 logger.error("Error processing event: {}", event, e);
-                throw new SimulationException("Failed to process event: " + event.getId(), e);
+                throw new SimulationException("Failed to process event: " + event, e);
             }
         }
     }
 
+    // Verarbeitung
     private void processEvent(Event event) throws SimulationException {
-        EventProcessor processor = processors.get(event.getType());
+        EventProcessor processor = processors.get(event.getClass());
         if (processor == null) {
-            logger.warn("No processor found for event type: {}", event.getType());
+            logger.warn("Kein Prozessor für Eventklasse: {}", event.getClass());
             return;
         }
 
@@ -252,18 +254,17 @@ public class DefaultEventScheduler implements EventScheduler {
         }
     }
 
-    @Override
-    public void registerProcessor(EventProcessor processor) {
-        if (processor == null) {
-            throw new IllegalArgumentException("Processor cannot be null");
-        }
 
+    // Registrierung
+    public void registerProcessor(EventProcessor processor) {
+        if (processor == null || processor.getEventType() == null) {
+            throw new IllegalArgumentException("Processor oder EventClass darf nicht null sein");
+        }
         processors.put(processor.getEventType(), processor);
-        logger.debug("Registered processor for event type: {}", processor.getEventType());
     }
 
     @Override
-    public void unregisterProcessor(EventType eventType) {
+    public void unregisterProcessor(Class<? extends Event> eventType) {
         if (eventType != null) {
             processors.remove(eventType);
             logger.debug("Unregistered processor for event type: {}", eventType);

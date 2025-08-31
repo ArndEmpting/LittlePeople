@@ -3,6 +3,7 @@ package com.littlepeople.core.model;
 import com.littlepeople.core.interfaces.*;
 import com.littlepeople.core.exceptions.SimulationException;
 import com.littlepeople.core.model.events.TimeChangeEvent;
+import com.littlepeople.core.util.SimulationTimeProvider;
 import com.littlepeople.simulation.population.PopulationManager;
 import com.littlepeople.simulation.population.PopulationManagerImpl;
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -46,8 +48,8 @@ public class SimulationEngine implements SimulationLifecycle {
      *
      * @param startTime the initial simulation time
      */
-    public SimulationEngine(LocalDateTime startTime) {
-        this.clock = new DefaultSimulationClock(startTime);
+    public SimulationEngine(SimulationClock clock) {
+        this.clock = clock;
         this.eventScheduler = new DefaultEventScheduler(clock);
 
         this.processorRegistry = new EventProcessorRegistry(eventScheduler) ;
@@ -62,7 +64,7 @@ public class SimulationEngine implements SimulationLifecycle {
      * Creates a new simulation engine starting at the current time.
      */
     public SimulationEngine() {
-        this(LocalDateTime.now());
+        this(new DefaultSimulationClock(LocalDateTime.now()));
     }
 
     /**
@@ -271,41 +273,8 @@ public class SimulationEngine implements SimulationLifecycle {
         }
     }
 
-    /**
-     * Advances the simulation by the specified duration.
-     *
-     * @param duration the duration to advance
-     * @throws SimulationException if the simulation cannot be advanced
-     */
-    public void advance(Duration duration) throws SimulationException {
-        if (duration == null) {
-            throw new IllegalArgumentException("Duration cannot be null");
-        }
 
-        writeLock.lock();
-        try {
-            if (state == SimulationState.RUNNING) {
-                throw new SimulationException("Cannot manually advance time while simulation is running");
-            }
 
-            LocalDateTime newTime = clock.advance(duration);
-            eventScheduler.processEvents(newTime);
-
-            logger.debug("Simulation advanced by {} to time: {}", duration, newTime);
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    /**
-     * Advances the simulation by the specified number of days.
-     *
-     * @param days the number of days to advance
-     * @throws SimulationException if the simulation cannot be advanced
-     */
-    public void advanceDays(long days) throws SimulationException {
-        advance(Duration.ofDays(days));
-    }
 
     /**
      * Schedules an event in the simulation.
@@ -345,7 +314,8 @@ public class SimulationEngine implements SimulationLifecycle {
                 if (currentState == SimulationState.RUNNING) {
                    // Advance time by a small increment (1 day)
                     LocalDate oldDate= clock.getCurrentTime().toLocalDate();
-                    LocalDateTime currentTime = clock.advanceDays(1);
+
+                    LocalDateTime currentTime = clock.advanceUnits(1, ChronoUnit.MONTHS);
                     LocalDate newDate= clock.getCurrentTime().toLocalDate();
                     // make and schedule a TimeChangeEvnt
 
@@ -362,6 +332,10 @@ public class SimulationEngine implements SimulationLifecycle {
                 } else if (currentState == SimulationState.PAUSED) {
                     // Wait while paused
                     Thread.sleep(100);
+                }
+                if(PopulationManagerImpl.getInstance().getPopulation().isEmpty()){
+                    logger.info("Population is empty, stopping simulation");
+                    stop();
                 }
             }
         } catch (InterruptedException e) {

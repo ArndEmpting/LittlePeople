@@ -1,5 +1,6 @@
 package com.littlepeople.core.model;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,8 +30,16 @@ public class PersonRegistry {
     public static Person get(UUID id) {
         return get(id.toString());
     }
-    public static void put(Person person) {
+    public static boolean contains(Person person) {
+        return personRegistry.containsKey(person.getId());
+    }
+    public static void add(Person person) {
         personRegistry.put(person.getId().toString(), person);
     }
 
+    public static void addAll(List<Person> initialInhabitants) {
+        for (Person person : initialInhabitants) {
+            add(person);
+        }
+    }
 }

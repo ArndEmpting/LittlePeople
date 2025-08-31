@@ -2,6 +2,7 @@ package com.littlepeople.core.interfaces;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Interface for managing simulation time and clock operations.
@@ -38,7 +39,7 @@ public interface SimulationClock {
      * @param days the number of days to advance
      * @return the new current time
      */
-    LocalDateTime advanceDays(long days);
+    public LocalDateTime advanceUnits(long years, ChronoUnit unit) ;
 
     /**
      * Gets the time scale factor for the simulation.

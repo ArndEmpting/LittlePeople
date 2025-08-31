@@ -6,9 +6,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A realistic mortality model based on modern demographic data using the Gompertz-Makeham law.
+ * Supports both annual and monthly probability calculations.
  *
  * @author LittlePeople Development Team
- * @version 1.0
+ * @version 1.1
  * @since 1.0
  */
 public class RealisticMortalityModel implements MortalityModel {
@@ -58,27 +59,107 @@ public class RealisticMortalityModel implements MortalityModel {
 
     @Override
     public double calculateBaselineProbability(int age) {
+        return calculateBaselineProbability(age, TimeUnit.YEAR);
+    }
+
+    /**
+     * Calculates the baseline mortality probability for a given age and time unit.
+     *
+     * @param age the age in years
+     * @param timeUnit the time unit for the probability calculation
+     * @return the baseline mortality probability for the specified time period
+     */
+    public double calculateBaselineProbability(int age, TimeUnit timeUnit) {
         if (age < 0) {
             throw new IllegalArgumentException("Age cannot be negative: " + age);
         }
 
+        double annualProbability;
+
         // Special case for infants (under 1 year)
         if (age == 0) {
-            return infantMortalityRate;
+            annualProbability = infantMortalityRate;
         }
-
         // Special case for young children (1-5 years)
-        if (age <= 5) {
-            return infantMortalityRate * childMortalityFactor * (6 - age) / 5.0;
+        else if (age <= 5) {
+            annualProbability = infantMortalityRate * childMortalityFactor * (6 - age) / 5.0;
         }
-
         // Gompertz-Makeham model for adult mortality
-        // q(x) = alpha + gamma * exp(beta * x)
-        // where x is age, and q(x) is probability of death
-        double probability = alpha + gamma * Math.exp(beta * age);
+        else {
+            annualProbability = alpha + gamma * Math.exp(beta * age);
+        }
 
         // Cap at 1.0 (100% probability)
-        return Math.min(probability, 1.0);
+        annualProbability = Math.min(annualProbability, 1.0);
+
+        // Convert to requested time unit
+        return convertProbabilityToTimeUnit(annualProbability, timeUnit);
+    }
+
+    /**
+     * Calculates the baseline mortality probability for a given age in months and time unit.
+     *
+     * @param ageInMonths the age in months
+     * @param timeUnit the time unit for the probability calculation
+     * @return the baseline mortality probability for the specified time period
+     */
+    public double calculateBaselineProbabilityByMonths(int ageInMonths, TimeUnit timeUnit) {
+        if (ageInMonths < 0) {
+            throw new IllegalArgumentException("Age in months cannot be negative: " + ageInMonths);
+        }
+
+        // Convert months to years for the calculation
+        double ageInYears = ageInMonths / 12.0;
+
+        double annualProbability;
+
+        // Special handling for infants (first 12 months)
+        if (ageInMonths < 12) {
+            // Higher mortality in first month, gradually decreasing
+            double monthFactor = 1.0 - (ageInMonths * 0.05); // Decrease by 5% each month
+            annualProbability = infantMortalityRate * Math.max(monthFactor, 0.3);
+        }
+        // Special case for young children (1-5 years)
+        else if (ageInYears <= 5) {
+            annualProbability = infantMortalityRate * childMortalityFactor * (6 - ageInYears) / 5.0;
+        }
+        // Gompertz-Makeham model for adult mortality
+        else {
+            annualProbability = alpha + gamma * Math.exp(beta * ageInYears);
+        }
+
+        // Cap at 1.0 (100% probability)
+        annualProbability = Math.min(annualProbability, 1.0);
+
+        // Convert to requested time unit
+        return convertProbabilityToTimeUnit(annualProbability, timeUnit);
+    }
+
+    /**
+     * Converts annual probability to the specified time unit.
+     *
+     * @param annualProbability the annual mortality probability
+     * @param timeUnit the target time unit
+     * @return the probability converted to the specified time unit
+     */
+    private double convertProbabilityToTimeUnit(double annualProbability, TimeUnit timeUnit) {
+        return switch (timeUnit) {
+            case YEAR -> annualProbability;
+            case MONTH -> {
+                // Convert annual probability to monthly using: 1 - (1-p_annual)^(1/12)
+                if (annualProbability >= 1.0) {
+                    yield 1.0;
+                }
+                yield 1.0 - Math.pow(1.0 - annualProbability, 1.0/12.0);
+            }
+            case DAY -> {
+                // Convert annual probability to daily using: 1 - (1-p_annual)^(1/365)
+                if (annualProbability >= 1.0) {
+                    yield 1.0;
+                }
+                yield 1.0 - Math.pow(1.0 - annualProbability, 1.0/365.0);
+            }
+        };
     }
 
     @Override
@@ -94,6 +175,7 @@ public class RealisticMortalityModel implements MortalityModel {
 
         // Adjust based on health status
         return switch (healthStatus) {
+            case EXCELLENT -> baselineProbability * 0.5; // 50% reduction for excellent health
             case HEALTHY -> baselineProbability * 0.8; // 20% reduction for healthy individuals
             case SICK -> baselineProbability * 1.5; // 50% increase for sick individuals
             case CRITICALLY_ILL -> baselineProbability * 5.0; // 5x increase for critically ill
@@ -152,4 +234,6 @@ public class RealisticMortalityModel implements MortalityModel {
     public void setChildMortalityFactor(double childMortalityFactor) {
         this.childMortalityFactor = childMortalityFactor;
     }
+
+
 }

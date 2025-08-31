@@ -2,40 +2,42 @@ package com.littlepeople.core.model.events;
 
 import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.model.EventType;
+import com.littlepeople.core.model.Person;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Event representing the formation of a partnership between two people.
- * This event contains the IDs of both partners and ensures bidirectional
- * relationship establishment.
+ * Event that triggers health calculation for a population.
+ * This event contains the population and current date for health processing.
  */
-public class PartnershipFormedEvent implements PartnershipEvent {
+public class HealthCalculationEvent implements Event {
 
     private final UUID id;
-    private final UUID person1Id;
-    private final UUID person2Id;
+    private final List<Person> population;
+    private final LocalDate currentDate;
     private final Instant timestamp;
     private final LocalDateTime scheduledTime;
     private final Map<String, Object> data;
     private boolean processed = false;
     private boolean cancelled = false;
 
-    public PartnershipFormedEvent(UUID person1Id, UUID person2Id) {
+    public HealthCalculationEvent(List<Person> population, LocalDate currentDate) {
         this.id = UUID.randomUUID();
-        this.person1Id = person1Id;
-        this.person2Id = person2Id;
+        this.population = population;
+        this.currentDate = currentDate;
         this.timestamp = Instant.now();
         this.scheduledTime = LocalDateTime.now();
 
         this.data = new HashMap<>();
-        this.data.put("person1Id", person1Id.toString());
-        this.data.put("person2Id", person2Id.toString());
-        this.data.put("eventType", "PARTNERSHIP_FORMED");
+        this.data.put("populationSize", population.size());
+        this.data.put("currentDate", currentDate.toString());
+        this.data.put("eventType", "HEALTH_CALCULATION");
     }
 
     @Override
@@ -45,7 +47,7 @@ public class PartnershipFormedEvent implements PartnershipEvent {
 
     @Override
     public EventType getType() {
-        return EventType.RELATIONSHIP;
+        return EventType.LIFECYCLE;
     }
 
     @Override
@@ -55,12 +57,7 @@ public class PartnershipFormedEvent implements PartnershipEvent {
 
     @Override
     public UUID getSourceId() {
-        return person1Id;
-    }
-
-    @Override
-    public Map<String, Object> getData() {
-        return new HashMap<>(data);
+        return null;
     }
 
     @Override
@@ -70,12 +67,17 @@ public class PartnershipFormedEvent implements PartnershipEvent {
 
     @Override
     public String getTargetEntityId() {
-        return person1Id.toString();
+        return "";
     }
 
     @Override
     public Object getData(String key) {
-        return data.get(key);
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> getData() {
+        return new HashMap<>(data);
     }
 
     @Override
@@ -98,12 +100,17 @@ public class PartnershipFormedEvent implements PartnershipEvent {
         this.cancelled = true;
     }
 
-    // Getters for specific data
-    public UUID getPerson1Id() {
-        return person1Id;
+    public List<Person> getPopulation() {
+        return population;
     }
 
-    public UUID getPerson2Id() {
-        return person2Id;
+    public LocalDate getCurrentDate() {
+        return currentDate;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("HealthCalculationEvent{id=%s, populationSize=%d, currentDate=%s}",
+                id, population.size(), currentDate);
     }
 }

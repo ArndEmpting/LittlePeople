@@ -7,6 +7,10 @@ import com.littlepeople.core.processors.RelationshipEventProcessor;
 import com.littlepeople.core.processors.EntityEventProcessor;
 import com.littlepeople.core.exceptions.SimulationException;
 import com.littlepeople.simulation.lifecycle.DefaultMortalityProcessor;
+import com.littlepeople.simulation.lifecycle.HealthCalculationProcessor;
+import com.littlepeople.simulation.lifecycle.LifecycleCoordinatorProcessor;
+import com.littlepeople.simulation.partnerships.FamilyProcessor;
+import com.littlepeople.simulation.partnerships.PartnershipProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +52,6 @@ public class EventProcessorRegistry {
 
         try {
             // Register lifecycle event processors
-            registerProcessor(new PersonDeathEventProcessor());
 
             // Register relationship event processors
             registerProcessor(new RelationshipEventProcessor());
@@ -57,7 +60,10 @@ public class EventProcessorRegistry {
             registerProcessor(new EntityEventProcessor());
             registerProcessor(new DefaultMortalityProcessor(eventScheduler));
             registerProcessor(new PersonDeathEventProcessor());
-
+            registerProcessor(new LifecycleCoordinatorProcessor(eventScheduler));
+            registerProcessor(new PartnershipProcessor());
+            registerProcessor(new FamilyProcessor(eventScheduler));
+            registerProcessor(new HealthCalculationProcessor(eventScheduler));
             logger.info("Successfully registered {} event processors", registeredProcessors.size());
 
         } catch (Exception e) {

@@ -186,12 +186,12 @@ public class DemographicDistribution {
                 .averageAge(35)
                 .ageStandardDeviation(20.0)
                 .ageGroupWeight(AgeGroup.INFANT, 0.05)
-                .ageGroupWeight(AgeGroup.CHILD, 0.18)
-                .ageGroupWeight(AgeGroup.ADOLESCENT, 0.12)
+                .ageGroupWeight(AgeGroup.CHILD, 0.20)
+                .ageGroupWeight(AgeGroup.ADOLESCENT, 0.30)
                 .ageGroupWeight(AgeGroup.YOUNG_ADULT, 0.20)
-                .ageGroupWeight(AgeGroup.ADULT, 0.30)
-                .ageGroupWeight(AgeGroup.SENIOR, 0.12)
-                .ageGroupWeight(AgeGroup.ELDER, 0.03)
+                .ageGroupWeight(AgeGroup.ADULT, 0.15)
+                .ageGroupWeight(AgeGroup.SENIOR, 0.10)
+                .ageGroupWeight(AgeGroup.ELDER, 0.00)
                 .build();
     }
 
@@ -252,14 +252,12 @@ public class DemographicDistribution {
 
         private Builder() {
             // Initialize with default age distribution
-            ageDistribution.put(AgeGroup.CHILD, 0.18);
             ageDistribution.put(AgeGroup.INFANT, 0.05);
             ageDistribution.put(AgeGroup.CHILD, 0.15);
             ageDistribution.put(AgeGroup.ADOLESCENT, 0.12);
-            ageDistribution.put(AgeGroup.YOUNG_ADULT, 0.20);
-            ageDistribution.put(AgeGroup.ADULT, 0.30);
-            ageDistribution.put(AgeGroup.SENIOR, 0.30);
-            ageDistribution.put(AgeGroup.ELDER, 0.03);
+            ageDistribution.put(AgeGroup.YOUNG_ADULT, 0.25);
+            ageDistribution.put(AgeGroup.ADULT, 0.20);
+            ageDistribution.put(AgeGroup.SENIOR, 0.20);
         }
         public Builder minAge(int age) {
             this.minAge = age;

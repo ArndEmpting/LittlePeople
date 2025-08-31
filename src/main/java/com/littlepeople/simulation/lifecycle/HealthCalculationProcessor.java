@@ -3,60 +3,64 @@ package com.littlepeople.simulation.lifecycle;
 import com.littlepeople.core.exceptions.SimulationException;
 import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.interfaces.EventProcessor;
-import com.littlepeople.core.model.EventType;
+import com.littlepeople.core.interfaces.EventScheduler;
+import com.littlepeople.core.model.EventProcessorRegistry;
 import com.littlepeople.core.model.HealthStatus;
 import com.littlepeople.core.model.Person;
+import com.littlepeople.core.model.events.HealthCalculationEvent;
 import com.littlepeople.core.model.events.HealthChangedEvent;
 import com.littlepeople.core.processors.AbstractEventProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Random;
 
 /**
- * Default implementation of the HealthProcessor interface.
- * Manages health status changes based on age, current health, and probabilistic factors.
- *
- * @author LittlePeople Development Team
- * @version 1.0
- * @since 1.0
+ * Processor that listens for HealthCalculationEvent and calculates new health status for each person,
+ * generating HealthChangedEvent for each person whose health status should change.
  */
-public class DefaultHealthProcessor extends AbstractEventProcessor implements HealthProcessor, EventProcessor {
+public class HealthCalculationProcessor extends AbstractEventProcessor implements EventProcessor {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultHealthProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(HealthCalculationProcessor.class);
 
     private final Random random;
 
     // Health transition probabilities (adjustable parameters)
-    private double baseHealthDeclineRate = 0.02 /12 ;  // 2% base chance per cycle
-    private double baseHealthImprovementRate = 0.15/12 ; // 15% chance to improve when sick
-    private double ageHealthDeclineMultiplier = 0.001/12 ; // Additional decline per year of age
-    private double criticalIllnessRecoveryRate = 0.05/12 ; // 5% chance to recover from critical illness
-
+    private double baseHealthDeclineRate = 0.02;  // 2% base chance per cycle
+    private double baseHealthImprovementRate = 0.15; // 15% chance to improve when sick
+    private double ageHealthDeclineMultiplier = 0.001; // Additional decline per year of age
+    private double criticalIllnessRecoveryRate = 0.05; // 5% chance to recover from critical illness
+private EventScheduler eventScheduler;
     /**
-     * Creates a new DefaultHealthProcessor.
+     * Creates a new HealthCalculationProcessor.
      */
-    public DefaultHealthProcessor() {
-        super(HealthChangedEvent.class);
+    public HealthCalculationProcessor(EventScheduler eventScheduler) {
+        super(HealthCalculationEvent.class);
         this.random = new Random();
-        logger.info("Initialized DefaultHealthProcessor");
+         this.eventScheduler = eventScheduler;
     }
 
     /**
-     * Creates a new DefaultHealthProcessor with a custom random seed.
+     * Creates a new HealthCalculationProcessor with a custom random seed.
      *
      * @param randomSeed the seed for random number generation
      */
-    public DefaultHealthProcessor(long randomSeed) {
-        super(HealthChangedEvent.class);
+    public HealthCalculationProcessor(long randomSeed) {
+        super(HealthCalculationEvent.class);
         this.random = new Random(randomSeed);
-        logger.info("Initialized DefaultHealthProcessor with seed {}", randomSeed);
+        logger.info("Initialized HealthCalculationProcessor with seed {}", randomSeed);
     }
 
     @Override
-    public void processHealthChanges(List<Person> population, LocalDate currentDate)
+    public void processEvent(Event event) throws SimulationException {
+        if (event instanceof HealthCalculationEvent) {
+            HealthCalculationEvent calcEvent = (HealthCalculationEvent) event;
+            processHealthCalculations(calcEvent.getPopulation(), calcEvent.getCurrentDate());
+        }
+    }
+
+    private void processHealthCalculations(java.util.List<Person> population, LocalDate currentDate)
             throws SimulationException {
 
         if (population == null) {
@@ -67,41 +71,44 @@ public class DefaultHealthProcessor extends AbstractEventProcessor implements He
             throw new IllegalArgumentException("Current date cannot be null");
         }
 
-        logger.debug("Processing health changes for {} inhabitants on {}",
+        logger.debug("Processing health calculations for {} inhabitants on {}",
                 population.size(), currentDate);
 
-        int healthChanges = 0;
+        int healthCalculations = 0;
         int errorCount = 0;
 
         for (Person person : population) {
             if (person != null && person.isAlive()) {
                 try {
                     HealthStatus oldHealth = person.getHealthStatus();
-                    HealthStatus newHealth = updatePersonHealth(person, currentDate);
+                    HealthStatus newHealth = calculateNewHealthStatus(person, currentDate);
 
                     if (!oldHealth.equals(newHealth)) {
-                        person.setHealthStatus(newHealth);
-                        healthChanges++;
+                        // Create HealthChangedEvent for this person
+                        HealthChangedEvent healthEvent = new HealthChangedEvent(
+                            person.getId(), newHealth, oldHealth);
 
-                        logger.debug("Person {} health changed from {} to {}",
+                        // TODO: Send event to event dispatcher/queue
+                         eventScheduler.scheduleEvent(healthEvent);
+
+                        healthCalculations++;
+                        logger.debug("Created health change event for person {} from {} to {}",
                                 person.getId(), oldHealth, newHealth);
                     }
 
                 } catch (Exception e) {
-                    logger.error("Error processing health for person: {}",
-                            person.getId(), e);
+                    logger.error("Error calculating health for person: {}", person.getId(), e);
                     errorCount++;
                     // Continue with other people even if one fails
                 }
             }
         }
 
-        logger.info("Processed {} health changes out of {} inhabitants ({} errors)",
-                healthChanges, population.size(), errorCount);
+        logger.info("Created {} health change events out of {} inhabitants ({} errors)",
+                healthCalculations, population.size(), errorCount);
     }
 
-    @Override
-    public HealthStatus updatePersonHealth(Person person, LocalDate currentDate) {
+    private HealthStatus calculateNewHealthStatus(Person person, LocalDate currentDate) {
         if (person == null) {
             throw new IllegalArgumentException("Person cannot be null");
         }
@@ -179,8 +186,7 @@ public class DefaultHealthProcessor extends AbstractEventProcessor implements He
         return currentHealth; // No change
     }
 
-    @Override
-    public double calculateHealthDeclineProbability(Person person) {
+    private double calculateHealthDeclineProbability(Person person) {
         if (person == null || !person.isAlive()) {
             return 0.0;
         }
@@ -219,8 +225,7 @@ public class DefaultHealthProcessor extends AbstractEventProcessor implements He
         return Math.min(probability, 0.3); // Cap at 30% per cycle
     }
 
-    @Override
-    public double calculateHealthImprovementProbability(Person person) {
+    private double calculateHealthImprovementProbability(Person person) {
         if (person == null || !person.isAlive()) {
             return 0.0;
         }
@@ -257,24 +262,13 @@ public class DefaultHealthProcessor extends AbstractEventProcessor implements He
         return Math.min(probability, 0.5); // Cap at 50% per cycle
     }
 
-    // EventProcessor implementation
-
-
-    @Override
-    public void processEvent(Event event) throws SimulationException {
-        // In a full implementation, this would handle TimeChangeEvent
-        // to trigger health processing
-        logger.debug("Processing event: {}", event.getClass().getSimpleName());
-    }
-
     @Override
     public int getPriority() {
-        // Medium priority, should run after aging but alongside mortality
-        return 750;
+        // Higher priority than the health change processor to ensure calculation happens first
+        return 700;
     }
 
     // Configuration methods
-
     public double getBaseHealthDeclineRate() {
         return baseHealthDeclineRate;
     }

@@ -10,12 +10,7 @@ import com.littlepeople.core.model.EventType;
  */
 public interface EventProcessor {
 
-    /**
-     * Gets the event type that this processor can handle.
-     *
-     * @return the event type
-     */
-    EventType getEventType();
+
 
     /**
      * Processes the given event.
@@ -31,7 +26,7 @@ public interface EventProcessor {
      * @param eventType the event type to check
      * @return true if this processor can handle the event type
      */
-    boolean canProcess(EventType eventType);
+    boolean canProcess(Class<? extends Event> eventType);
 
     /**
      * Gets the priority of this processor when multiple processors
@@ -40,4 +35,6 @@ public interface EventProcessor {
      * @return the processor priority (higher values = higher priority)
      */
     int getPriority();
+
+    Class<? extends Event> getEventType();
 }

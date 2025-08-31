@@ -1,6 +1,7 @@
 package com.littlepeople.core.model;
 
 import com.littlepeople.core.interfaces.Entity;
+import com.littlepeople.core.util.SimulationTimeProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,13 +148,31 @@ public class Person implements Entity {
      * Calculates the person's current age in years.
      *
      * <p>Age is calculated from birth date to current date for living persons,
-     * or from birth date to death date for deceased persons. The calculation
+     * <p>Age is calculated from birth date to current simulation date for living persons,
      * uses precise date arithmetic to handle leap years correctly.</p>
      *
      * @return the age in complete years
-     */
+     * <p>For living persons, this method uses the current simulation time instead of
+     * real system time to ensure consistency within the simulation.</p>
+     *
+     *
+     * @throws IllegalStateException if no simulation clock has been set for living persons
+    */
     public int getAge() {
-        LocalDate endDate = isAlive() ? LocalDate.now() : deathDate;
+        LocalDate endDate;
+        if (isAlive()) {
+            // For living persons, use simulation time
+            if (SimulationTimeProvider.isClockSet()) {
+                endDate = SimulationTimeProvider.getCurrentDate();
+            } else {
+                // Fallback to system time if no simulation clock is set (e.g., during testing)
+                endDate = LocalDate.now();
+                logger.warn("No simulation clock set for person {}, using system time for age calculation", id);
+            }
+        } else {
+            // For deceased persons, use death date
+            endDate = deathDate;
+        }
         return Period.between(birthDate, endDate).getYears();
     }
 
@@ -388,9 +407,7 @@ public class Person implements Entity {
         if (deathDate.isBefore(birthDate)) {
             throw new IllegalArgumentException("Death date cannot be before birth date");
         }
-        if (deathDate.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("Death date cannot be in the future");
-        }
+
         if (!isAlive()) {
             throw new IllegalArgumentException("Person is already deceased");
         }
@@ -542,5 +559,9 @@ public class Person implements Entity {
     public String toString() {
         return String.format("Person{id=%s, name='%s %s', gender=%s, age=%d, alive=%s}",
                            id, firstName, lastName, gender, getAge(), isAlive());
+    }
+
+    public  int getMaxAgeYears() {
+        return MAX_AGE_YEARS;
     }
 }

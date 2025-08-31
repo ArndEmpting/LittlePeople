@@ -3,6 +3,7 @@ package com.littlepeople.core.model;
 import com.littlepeople.core.interfaces.SimulationClock;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -91,12 +92,29 @@ public class DefaultSimulationClock implements SimulationClock {
     }
 
     @Override
-    public LocalDateTime advanceDays(long days) {
-        if (days < 0) {
-            throw new IllegalArgumentException("Days cannot be negative");
+    public LocalDateTime advanceUnits(long years, ChronoUnit unit) {
+        if (years < 0) {
+            throw new IllegalArgumentException("Years cannot be negative");
         }
 
-        return advance(Duration.ofDays(days));
+        writeLock.lock();
+        try {
+            if (!paused && running) {
+                if(unit == ChronoUnit.YEARS) {
+
+                    currentTime = currentTime.plusYears(years);
+                } else if (unit == ChronoUnit.MONTHS) {
+                    currentTime = currentTime.plusMonths(years);
+                } else if (unit == ChronoUnit.DAYS) {
+                    currentTime = currentTime.plusDays(years);
+                } else {
+                    throw new IllegalArgumentException("Unsupported ChronoUnit: " + unit);
+                }
+            }
+            return currentTime;
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     @Override

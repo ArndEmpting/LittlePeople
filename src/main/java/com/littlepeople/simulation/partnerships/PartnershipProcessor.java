@@ -6,9 +6,11 @@ import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.model.Person;
 import com.littlepeople.core.model.LifeStage;
 import com.littlepeople.core.model.EventType;
+import com.littlepeople.core.model.events.PartnershipCalculationEvent;
 import com.littlepeople.core.model.events.PartnershipFormedEvent;
 import com.littlepeople.core.model.events.PartnershipDissolvedEvent;
 import com.littlepeople.core.model.events.PersonDeathEvent;
+import com.littlepeople.core.processors.AbstractEventProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +46,7 @@ import java.util.stream.Collectors;
  * @since 1.0.0
  * @version 1.0.0
  */
-public class PartnershipProcessor implements EventProcessor {
+public class PartnershipProcessor extends AbstractEventProcessor implements EventProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(PartnershipProcessor.class);
 
@@ -54,13 +56,14 @@ public class PartnershipProcessor implements EventProcessor {
     // Configuration parameters
     private static final double BASE_PARTNERSHIP_PROBABILITY = 0.15; // Base chance per simulation cycle
     private static final double COMPATIBILITY_THRESHOLD = 0.3; // Minimum compatibility for consideration
-    private static final int MAX_PARTNERS_TO_CONSIDER = 10; // Limit for performance
+    private static final int MAX_PARTNERS_TO_CONSIDER = 20; // Limit for performance
     private static final int MIN_PARTNERSHIP_AGE = 16;
 
     /**
      * Creates a new partnership processor with default configuration.
      */
     public PartnershipProcessor() {
+        super(PartnershipCalculationEvent.class);
         this.compatibilityCalculator = new CompatibilityCalculator();
         this.random = new Random();
     }
@@ -72,6 +75,7 @@ public class PartnershipProcessor implements EventProcessor {
      * @param random random number generator for reproducible testing
      */
     public PartnershipProcessor(CompatibilityCalculator compatibilityCalculator, Random random) {
+        super(PartnershipCalculationEvent.class);
         this.compatibilityCalculator = compatibilityCalculator;
         this.random = random;
     }
@@ -386,11 +390,7 @@ public class PartnershipProcessor implements EventProcessor {
         return potentialPartners.get(potentialPartners.size() - 1);
     }
 
-    // EventProcessor interface implementation
-    @Override
-    public EventType getEventType() {
-        return EventType.RELATIONSHIP;
-    }
+
 
     @Override
     public void processEvent(Event event) throws SimulationException {
@@ -398,24 +398,15 @@ public class PartnershipProcessor implements EventProcessor {
             throw new IllegalArgumentException("Event cannot be null");
         }
 
-        EventType eventType = event.getType();
-        if (!canProcess(eventType)) {
-            throw new SimulationException("Cannot process event type: " + eventType);
+
+        if (!canProcess(event.getClass())) {
+            throw new SimulationException("Cannot process event type: " + event.getClass());
         }
 
-        logger.debug("Processing event: {} of type: {}", event.getId(), eventType);
+        logger.debug("Processing event: {} of type: {}", event.getId(), event.getClass());
 
         // Handle different event types
-        switch (eventType) {
-            case RELATIONSHIP:
-                // For partnership-related events, we would need to determine
-                // the specific subtype and handle accordingly
-                logger.info("Processing relationship event: {}", event.getId());
-                // Implementation would depend on specific event data
-                break;
-            default:
-                throw new SimulationException("Unsupported event type: " + eventType);
-        }
+
 
         // Mark event as processed
         if (event instanceof com.littlepeople.core.interfaces.Event) {
@@ -423,10 +414,6 @@ public class PartnershipProcessor implements EventProcessor {
         }
     }
 
-    @Override
-    public boolean canProcess(EventType eventType) {
-        return eventType == EventType.RELATIONSHIP;
-    }
 
     @Override
     public int getPriority() {

@@ -12,7 +12,7 @@ import java.util.UUID;
 /**
  * Event representing the dissolution of a partnership between two people.
  */
-public class PartnershipDissolvedEvent implements Event {
+public class PartnershipDissolvedEvent implements PartnershipEvent  {
 
     private final UUID id;
     private final UUID person1Id;
