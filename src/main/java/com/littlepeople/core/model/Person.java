@@ -59,6 +59,7 @@ public class Person implements Entity {
     private Person partner;
     private final Set<Person> children;
     private final Set<Person> parents;
+    private final Set<Person> formerPartner;
 
     /**
      * Creates a new person with the specified basic information.
@@ -106,6 +107,7 @@ public class Person implements Entity {
         this.personalityTraits = new ConcurrentHashMap<>();
         this.children = Collections.synchronizedSet(new HashSet<>());
         this.parents = Collections.synchronizedSet(new HashSet<>());
+        this.formerPartner = Collections.synchronizedSet(new HashSet<>());
 
         // Do NOT initialize personality traits here - they will be set by PersonBuilder
 
@@ -300,7 +302,7 @@ public class Person implements Entity {
             this.partner = null;
             formerPartner.partner = null;
 
-            logger.info("Partnership dissolved between {} {} and {} {}",
+            logger.debug("Partnership dissolved between {} {} and {} {}",
                        this.firstName, this.lastName,
                        formerPartner.firstName, formerPartner.lastName);
         }
@@ -386,7 +388,7 @@ public class Person implements Entity {
         // Dissolve partnership
         removePartnership();
 
-        logger.info("Person deceased: {} {} (Age: {}, Cause: {})",
+        logger.debug("Person deceased: {} {} (Age: {}, Cause: {})",
                    firstName, lastName, getAge(), this.deathCause.getDescription());
     }
 
@@ -563,5 +565,12 @@ public class Person implements Entity {
 
     public  int getMaxAgeYears() {
         return MAX_AGE_YEARS;
+    }
+
+    public Set<Person> getFormerPartner() {
+        return this.formerPartner;
+    }
+    public void addFormerPartner(Person person) {
+        this.formerPartner.add(person);
     }
 }

@@ -29,7 +29,7 @@ public class DefaultEventScheduler implements EventScheduler {
 
     private final PriorityBlockingQueue<Event> eventQueue;
     private final Map<UUID, Event> eventMap;
-    private final Map<Class<? extends Event>, EventProcessor> processors ;
+    private final Map<Class<? extends Event>, EventProcessor> processors;
 
     private final SimulationClock simulationClock;
 
@@ -79,11 +79,11 @@ public class DefaultEventScheduler implements EventScheduler {
 
         LocalDateTime scheduledTime = simulationClock.getCurrentTime().plusDays(delayInDays);
         Event delayedEvent = new SimulationEvent(
-            event.getType(),
-            scheduledTime,
-            event.getTargetEntityId(),
-            ((SimulationEvent) event).getPriority(),
-                 event.getData(),
+                event.getType(),
+                scheduledTime,
+                event.getTargetEntityId(),
+                ((SimulationEvent) event).getPriority(),
+                event.getData(),
                 event.getSourceId()
         );
 
@@ -150,6 +150,9 @@ public class DefaultEventScheduler implements EventScheduler {
     }
 
     // Verarbeitung
+    private long maxProcessingTime = 0;
+    private String slowestProcessor = "";
+
     private void processEvent(Event event) throws SimulationException {
         EventProcessor processor = processors.get(event.getClass());
         if (processor == null) {
@@ -157,6 +160,7 @@ public class DefaultEventScheduler implements EventScheduler {
             return;
         }
 
+        long start = System.nanoTime();
         try {
             processor.processEvent(event);
             event.markProcessed();
@@ -165,6 +169,13 @@ public class DefaultEventScheduler implements EventScheduler {
         } catch (Exception e) {
             logger.error("Error in event processor for event: {}", event, e);
             throw new SimulationException("Event processing failed", e);
+        } finally {
+            long duration = System.nanoTime() - start;
+            if (duration > maxProcessingTime) {
+                maxProcessingTime = duration;
+                slowestProcessor = processor.getClass().getSimpleName();
+                logger.info("Neuer langsamster Processor: {} ({} ms)", slowestProcessor, duration / 1_000_000);
+            }
         }
     }
 
@@ -177,9 +188,9 @@ public class DefaultEventScheduler implements EventScheduler {
         readLock.lock();
         try {
             return eventQueue.stream()
-                .filter(event -> event.getScheduledTime().equals(time))
-                .filter(event -> !event.isCancelled())
-                .collect(Collectors.toList());
+                    .filter(event -> event.getScheduledTime().equals(time))
+                    .filter(event -> !event.isCancelled())
+                    .collect(Collectors.toList());
         } finally {
             readLock.unlock();
         }
@@ -197,10 +208,10 @@ public class DefaultEventScheduler implements EventScheduler {
         readLock.lock();
         try {
             return eventQueue.stream()
-                .filter(event -> !event.getScheduledTime().isBefore(startTime))
-                .filter(event -> !event.getScheduledTime().isAfter(endTime))
-                .filter(event -> !event.isCancelled())
-                .collect(Collectors.toList());
+                    .filter(event -> !event.getScheduledTime().isBefore(startTime))
+                    .filter(event -> !event.getScheduledTime().isAfter(endTime))
+                    .filter(event -> !event.isCancelled())
+                    .collect(Collectors.toList());
         } finally {
             readLock.unlock();
         }
@@ -211,9 +222,9 @@ public class DefaultEventScheduler implements EventScheduler {
         readLock.lock();
         try {
             return eventQueue.stream()
-                .filter(event -> !event.isCancelled())
-                .findFirst()
-                .orElse(null);
+                    .filter(event -> !event.isCancelled())
+                    .findFirst()
+                    .orElse(null);
         } finally {
             readLock.unlock();
         }
@@ -230,8 +241,8 @@ public class DefaultEventScheduler implements EventScheduler {
         readLock.lock();
         try {
             return (int) eventQueue.stream()
-                .filter(event -> !event.isCancelled())
-                .count();
+                    .filter(event -> !event.isCancelled())
+                    .count();
         } finally {
             readLock.unlock();
         }

@@ -3,10 +3,7 @@ package com.littlepeople.simulation.lifecycle;
 import com.littlepeople.core.exceptions.SimulationException;
 import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.interfaces.EventScheduler;
-import com.littlepeople.core.model.DeathCause;
-import com.littlepeople.core.model.EventType;
-import com.littlepeople.core.model.HealthStatus;
-import com.littlepeople.core.model.Person;
+import com.littlepeople.core.model.*;
 import com.littlepeople.core.model.events.MortalityCalculationEvent;
 import com.littlepeople.core.model.events.PersonDeathEvent;
 import com.littlepeople.core.processors.AbstractEventProcessor;
@@ -43,7 +40,7 @@ public class DefaultMortalityProcessor extends AbstractEventProcessor implements
     public DefaultMortalityProcessor(EventScheduler eventScheduler) {
         super(MortalityCalculationEvent.class);
         this.random = new Random();
-        this.mortalityModel = new MedievalMortalityModel();
+        this.mortalityModel = new RealisticMortalityModel();
         this.eventScheduler = eventScheduler;
 
         logger.info("Initialized DefaultMortalityProcessor with {}",
@@ -143,8 +140,9 @@ public class DefaultMortalityProcessor extends AbstractEventProcessor implements
         double adjustedProbability = mortalityModel.adjustForHealth(
                 baselineProbability, healthStatus);
 
-
-
+        if(person.getGender()== Gender.FEMALE && person.getChildren().size()>5) {
+            adjustedProbability *= 1 + (person.getChildren().size() / 10); // Slightly higher risk for high-parity
+        }
         logger.trace("Death probability for {} (age {}): baseline={}, adjusted={}",
                 person.getId(), person.getAge(), baselineProbability, adjustedProbability);
 

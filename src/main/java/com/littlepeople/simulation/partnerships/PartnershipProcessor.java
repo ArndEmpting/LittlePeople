@@ -11,6 +11,7 @@ import com.littlepeople.core.model.events.PartnershipFormedEvent;
 import com.littlepeople.core.model.events.PartnershipDissolvedEvent;
 import com.littlepeople.core.model.events.PersonDeathEvent;
 import com.littlepeople.core.processors.AbstractEventProcessor;
+import com.littlepeople.simulation.population.PopulationManagerImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,9 +55,9 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
     private final Random random;
 
     // Configuration parameters
-    private static final double BASE_PARTNERSHIP_PROBABILITY = 0.15; // Base chance per simulation cycle
+    private static final double BASE_PARTNERSHIP_PROBABILITY = 0.45; // Base chance per simulation cycle
     private static final double COMPATIBILITY_THRESHOLD = 0.3; // Minimum compatibility for consideration
-    private static final int MAX_PARTNERS_TO_CONSIDER = 20; // Limit for performance
+    private static final int MAX_PARTNERS_TO_CONSIDER = 10; // Limit for performance
     private static final int MIN_PARTNERSHIP_AGE = 16;
 
     /**
@@ -140,7 +141,7 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
                     alreadyMatched.add(person.getId());
                     alreadyMatched.add(selectedPartner.getId());
 
-                    logger.info("Partnership formed between {} and {}",
+                    logger.debug("Partnership formed between {} and {}",
                                person.getId(), selectedPartner.getId());
                 }
             }
@@ -264,7 +265,7 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
             // Create the partnership event
             PartnershipFormedEvent event = new PartnershipFormedEvent(person1.getId(), person2.getId());
 
-            logger.info("Partnership created between {} and {} on {}",
+            logger.debug("Partnership created between {} and {} on {}",
                        person1.getId(), person2.getId(), partnershipDate);
 
             return event;
@@ -402,11 +403,11 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
         if (!canProcess(event.getClass())) {
             throw new SimulationException("Cannot process event type: " + event.getClass());
         }
-
+        PartnershipCalculationEvent partnershipEvent = (PartnershipCalculationEvent) event;
         logger.debug("Processing event: {} of type: {}", event.getId(), event.getClass());
 
         // Handle different event types
-
+        processPartnershipFormation(PopulationManagerImpl.getInstance().getPopulation(), partnershipEvent.getEventDate());
 
         // Mark event as processed
         if (event instanceof com.littlepeople.core.interfaces.Event) {

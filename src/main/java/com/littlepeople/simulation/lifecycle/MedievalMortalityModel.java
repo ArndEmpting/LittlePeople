@@ -31,7 +31,7 @@ public class MedievalMortalityModel implements MortalityModel {
 
     // Adult mortality follows a steeper curve than modern times
     private double baseAdultMortality = 0.01;     // 1% base mortality for young adults
-    private double mortalityIncreaseFactor = 0.15; // Faster increase with age than modern
+    private double mortalityIncreaseFactor = 0.1; // Faster increase with age than modern
     private double maxMortalityRate = 0.95;       // Maximum mortality rate
 
     // Disease and warfare factors

@@ -8,9 +8,7 @@ import com.littlepeople.core.model.events.ImmigrationEvent;
 import com.littlepeople.core.model.events.PopulationInitializedEvent;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Collections;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -366,7 +364,18 @@ public class PopulationManagerImpl implements PopulationManager {
 
         // Calculate family statistics
         long partnerships = living.stream().filter(p -> p.getPartner() != null).count() / 2;
-        long families = living.stream().filter(p -> !p.getChildren().isEmpty()).count();
+
+        Set<Set<UUID>> uniqueFamilies = new HashSet<>();
+        for (Person person : living) {
+            for (Person child : person.getChildren()) {
+                Set<UUID> parents = new HashSet<>();
+                for (Person parent : child.getParents()) {
+                    parents.add(parent.getId());
+                }
+                uniqueFamilies.add(parents);
+            }
+        }
+        long families = uniqueFamilies.size();
         double avgChildren = living.stream()
                 .mapToInt(p -> p.getChildren().size())
                 .average()

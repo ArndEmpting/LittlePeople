@@ -1,17 +1,12 @@
 package com.littlepeople.core.processors;
 
 import com.littlepeople.core.interfaces.Event;
-import com.littlepeople.core.interfaces.EventProcessor;
-import com.littlepeople.core.model.EventType;
 import com.littlepeople.core.model.Person;
 import com.littlepeople.core.model.PersonRegistry;
 import com.littlepeople.core.model.events.PersonDeathEvent;
 import com.littlepeople.core.exceptions.SimulationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Event processor for handling person death events.
@@ -53,9 +48,10 @@ public class PersonDeathEventProcessor extends AbstractEventProcessor {
             Person partner = person.getPartner();
             person.setPartner(null);
             partner.setPartner(null);
+            person.getFormerPartner().add(partner);
         }
 
-        logger.info("Processed death event for person: {} {} (Age: {}, Cause: {}), Family: {}",
+        logger.debug("Processed death event for person: {} {} (Age: {}, Cause: {}), Family: {}",
                    person.getFirstName(), person.getLastName(), person.getAge(),
                    deathEvent.getDeathCause().getDescription(), person.getChildren().size());
 

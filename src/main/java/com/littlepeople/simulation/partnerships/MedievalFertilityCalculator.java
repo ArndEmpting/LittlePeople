@@ -137,7 +137,9 @@ public class MedievalFertilityCalculator  implements FertilityCalculatorInterfac
         if (person == null || !person.isAlive()) {
             return false;
         }
-
+        if(person.getChildren().size()=>20){
+            return false; // Prevent excessive number of children in medieval context
+        }
         int age = person.getAge();
 
         // Age-based fertility check (more lenient than modern)

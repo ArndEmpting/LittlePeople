@@ -21,13 +21,14 @@ public class PartnershipCalculationEvent implements Event {
     private boolean processed = false;
     private boolean cancelled = false;
     private final Instant timestamp;
-
+    private final LocalDate eventDate;
 
     public PartnershipCalculationEvent(LocalDate calculationDate) {
         this.id = UUID.randomUUID();
         this.timestamp = Instant.now();
         this.scheduledTime = LocalDateTime.now();
         this.data = new HashMap<>();
+        this.eventDate = calculationDate;
     }
 
     @Override
@@ -91,6 +92,8 @@ public class PartnershipCalculationEvent implements Event {
         this.cancelled = true;
     }
 
-
+    public LocalDate getEventDate() {
+        return eventDate;
+    }
 
 }

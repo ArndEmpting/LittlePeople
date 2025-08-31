@@ -367,20 +367,6 @@ public class CompatibilityCalculator {
             return false;
         }
 
-        // No child-adult partnerships
-        LifeStage stage1 = person1.getLifeStage();
-        LifeStage stage2 = person2.getLifeStage();
-
-        if (stage1 == LifeStage.CHILD || stage2 == LifeStage.CHILD) {
-            return false;
-        }
-
-        if (stage1 == LifeStage.ADOLESCENT || stage2 == LifeStage.ADOLESCENT) {
-            // Adolescents can only partner with other adolescents or young adults
-            return (stage1 == LifeStage.ADOLESCENT || stage1 == LifeStage.YOUNG_ADULT) &&
-                   (stage2 == LifeStage.ADOLESCENT || stage2 == LifeStage.YOUNG_ADULT);
-        }
-
         return true;
     }
 }

@@ -128,7 +128,7 @@ public class FamilyProcessor extends AbstractEventProcessor implements EventProc
 
                     birthEvents.add(birthEvent);
 
-                    logger.info("Child {} born to parents {} and {}",
+                    logger.debug("Child {} born to parents {} and {}",
                             child.getFullName(), couple.malePartner.getFullName(), couple.femalePartner.getFullName());
                 }
             }
