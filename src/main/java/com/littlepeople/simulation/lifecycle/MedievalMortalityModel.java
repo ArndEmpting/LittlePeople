@@ -26,12 +26,12 @@ public class MedievalMortalityModel implements MortalityModel {
 
     // Medieval mortality parameters
     private double infantMortalityRate = 0.25; // 25% infant mortality (very high for medieval times)
-    private double childMortalityRate = 0.15;  // 15% mortality for ages 1-5
-    private double adolescentMortalityRate = 0.08; // 8% mortality for ages 6-15
+    private double childMortalityRate = 0.12;  // 15% mortality for ages 1-5
+    private double adolescentMortalityRate = 0.07; // 8% mortality for ages 6-15
 
     // Adult mortality follows a steeper curve than modern times
-    private double baseAdultMortality = 0.01;     // 1% base mortality for young adults
-    private double mortalityIncreaseFactor = 0.1; // Faster increase with age than modern
+    private double baseAdultMortality = 0.008;     // 1% base mortality for young adults
+    private double mortalityIncreaseFactor = 0.08; // Faster increase with age than modern
     private double maxMortalityRate = 0.95;       // Maximum mortality rate
 
     // Disease and warfare factors
@@ -93,23 +93,7 @@ public class MedievalMortalityModel implements MortalityModel {
         return convertProbabilityToTimeUnit(annualProbability, timeUnit);
     }
 
-    /**
-     * Calculates the baseline mortality probability for a given age in months and time unit.
-     *
-     * @param ageInMonths the age in months
-     * @param timeUnit the time unit for the probability calculation
-     * @return the baseline mortality probability for the specified time period
-     */
-    public double calculateBaselineProbabilityByMonths(int ageInMonths, TimeUnit timeUnit) {
-        if (ageInMonths < 0) {
-            throw new IllegalArgumentException("Age in months cannot be negative: " + ageInMonths);
-        }
 
-        double annualProbability = calculateAnnualProbabilityByMonths(ageInMonths);
-
-        // Convert to requested time unit
-        return convertProbabilityToTimeUnit(annualProbability, timeUnit);
-    }
 
     /**
      * Internal method to calculate annual probability for a given age in years.
@@ -132,53 +116,19 @@ public class MedievalMortalityModel implements MortalityModel {
 
         // Adults (16+ years) - exponential increase with age
         // Using a modified exponential model that reflects medieval conditions
-        double ageFactor = Math.max(0, age - 30); // Start counting from age 16
+        double ageFactor = Math.max(0, age - 40); // Start counting from age 16
         double probability = baseAdultMortality * Math.exp(ageFactor * mortalityIncreaseFactor);
 
         // Medieval people rarely lived past 60-70, so increase mortality rapidly after 50
-        if (age >= 70) {
-            probability *= 1.5 + (age - 70) * 0.2; // Rapidly increasing mortality
+        if (age >= 80) {
+            probability *= 1.5 + (age - 80) * 0.2; // Rapidly increasing mortality
         }
 
         // Cap at maximum mortality rate
         return Math.min(probability, maxMortalityRate);
     }
 
-    /**
-     * Internal method to calculate annual probability for a given age in months.
-     */
-    private double calculateAnnualProbabilityByMonths(int ageInMonths) {
-        double ageInYears = ageInMonths / 12.0;
 
-        // Special handling for first year of life (month by month)
-        if (ageInMonths < 12) {
-            // Very high mortality in first months, gradually decreasing
-            double monthFactor = 1.0 - (ageInMonths * 0.04); // Decrease by 4% each month
-            return infantMortalityRate * Math.max(monthFactor, 0.5);
-        }
-
-        // Young children (1-5 years) - high mortality
-        if (ageInYears >= 1 && ageInYears <= 5) {
-            return childMortalityRate * (1.0 - (ageInYears - 1) * 0.1); // Decreases slightly with age
-        }
-
-        // Adolescents (6-15 years) - moderate mortality
-        if (ageInYears >= 6 && ageInYears <= 15) {
-            return adolescentMortalityRate * (1.0 - (ageInYears - 6) * 0.05); // Decreases with age
-        }
-
-        // Adults (16+ years) - exponential increase with age
-        double ageFactor = Math.max(0, ageInYears - 30);
-        double probability = baseAdultMortality * Math.exp(ageFactor * mortalityIncreaseFactor);
-
-        // Medieval people rarely lived past 60-70, so increase mortality rapidly after 50
-        if (ageInYears >= 70) {
-            probability *= 1.5 + (ageInYears - 70) * 0.2; // Rapidly increasing mortality
-        }
-
-        // Cap at maximum mortality rate
-        return Math.min(probability, maxMortalityRate);
-    }
 
     /**
      * Converts annual probability to the specified time unit.

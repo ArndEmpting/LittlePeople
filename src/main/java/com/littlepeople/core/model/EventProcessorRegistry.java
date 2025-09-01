@@ -2,9 +2,10 @@ package com.littlepeople.core.model;
 
 import com.littlepeople.core.interfaces.EventProcessor;
 import com.littlepeople.core.interfaces.EventScheduler;
+import com.littlepeople.core.processors.BirthProcessor;
 import com.littlepeople.core.processors.PersonDeathEventProcessor;
 import com.littlepeople.core.processors.RelationshipEventProcessor;
-import com.littlepeople.core.processors.EntityEventProcessor;
+import com.littlepeople.core.processors.HealthChangeProcessor;
 import com.littlepeople.core.exceptions.SimulationException;
 import com.littlepeople.simulation.lifecycle.DefaultMortalityProcessor;
 import com.littlepeople.simulation.lifecycle.HealthCalculationProcessor;
@@ -16,8 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Registry class that manages the registration of all event processors
@@ -57,13 +56,14 @@ public class EventProcessorRegistry {
             registerProcessor(new RelationshipEventProcessor());
 
             // Register entity event processors
-            registerProcessor(new EntityEventProcessor());
+            registerProcessor(new HealthChangeProcessor());
             registerProcessor(new DefaultMortalityProcessor(eventScheduler));
             registerProcessor(new PersonDeathEventProcessor());
             registerProcessor(new LifecycleCoordinatorProcessor(eventScheduler));
-            registerProcessor(new PartnershipProcessor());
+            registerProcessor(new PartnershipProcessor(eventScheduler));
             registerProcessor(new FamilyProcessor(eventScheduler));
             registerProcessor(new HealthCalculationProcessor(eventScheduler));
+            registerProcessor(new BirthProcessor(eventScheduler));
             logger.info("Successfully registered {} event processors", registeredProcessors.size());
 
         } catch (Exception e) {

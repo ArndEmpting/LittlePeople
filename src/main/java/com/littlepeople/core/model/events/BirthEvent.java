@@ -2,8 +2,10 @@ package com.littlepeople.core.model.events;
 
 import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.model.EventType;
+import com.littlepeople.core.util.SimulationTimeProvider;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,27 +14,28 @@ import java.util.UUID;
 /**
  * Event representing the addition of a child to a parent-child relationship.
  */
-public class ChildAddedEvent implements Event {
+public class BirthEvent implements Event {
 
     private final UUID id;
-    private final UUID parentId;
-    private final UUID childId;
+    private final UUID motherId;
+    private final UUID fatherId;
+
     private final Instant timestamp;
     private final LocalDateTime scheduledTime;
     private final Map<String, Object> data;
     private boolean processed = false;
     private boolean cancelled = false;
 
-    public ChildAddedEvent(UUID parentId, UUID childId) {
+    public BirthEvent(UUID fatherId, UUID motherId, LocalDate birthDate) {
         this.id = UUID.randomUUID();
-        this.parentId = parentId;
-        this.childId = childId;
+        this.fatherId = fatherId;
+        this.motherId = motherId;
         this.timestamp = Instant.now();
-        this.scheduledTime = LocalDateTime.now();
+        this.scheduledTime = birthDate.atStartOfDay();
 
         this.data = new HashMap<>();
-        this.data.put("parentId", parentId.toString());
-        this.data.put("childId", childId.toString());
+        this.data.put("fatherId", fatherId);
+        this.data.put("motherId", motherId);
         this.data.put("eventType", "CHILD_ADDED");
     }
 
@@ -53,7 +56,7 @@ public class ChildAddedEvent implements Event {
 
     @Override
     public UUID getSourceId() {
-        return parentId;
+        return motherId;
     }
 
     @Override
@@ -68,7 +71,7 @@ public class ChildAddedEvent implements Event {
 
     @Override
     public String getTargetEntityId() {
-        return childId.toString();
+        return motherId.toString();
     }
 
     @Override
@@ -96,11 +99,12 @@ public class ChildAddedEvent implements Event {
         this.cancelled = true;
     }
 
-    public UUID getParentId() {
-        return parentId;
+    public UUID getMotherId() {
+        return motherId;
     }
 
-    public UUID getChildId() {
-        return childId;
+    public UUID getFatherId() {
+        return fatherId;
     }
+
 }

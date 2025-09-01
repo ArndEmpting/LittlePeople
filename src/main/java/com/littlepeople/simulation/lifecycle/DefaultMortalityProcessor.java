@@ -40,7 +40,7 @@ public class DefaultMortalityProcessor extends AbstractEventProcessor implements
     public DefaultMortalityProcessor(EventScheduler eventScheduler) {
         super(MortalityCalculationEvent.class);
         this.random = new Random();
-        this.mortalityModel = new RealisticMortalityModel();
+        this.mortalityModel = new MedievalMortalityModel();
         this.eventScheduler = eventScheduler;
 
         logger.info("Initialized DefaultMortalityProcessor with {}",
@@ -143,9 +143,8 @@ public class DefaultMortalityProcessor extends AbstractEventProcessor implements
         if(person.getGender()== Gender.FEMALE && person.getChildren().size()>5) {
             adjustedProbability *= 1 + (person.getChildren().size() / 10); // Slightly higher risk for high-parity
         }
-        logger.trace("Death probability for {} (age {}): baseline={}, adjusted={}",
-                person.getId(), person.getAge(), baselineProbability, adjustedProbability);
-
+        logger.debug("Death probability for {} (age {}): baseline={:.4f}, adjusted={:.4f}",
+        person.getId(), person.getAge(), baselineProbability, adjustedProbability);
         return adjustedProbability;
     }
 

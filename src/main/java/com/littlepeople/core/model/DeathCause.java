@@ -64,7 +64,8 @@ public enum DeathCause {
      * cannot be determined or is not specified
      * in the simulation context.</p>
      */
-    UNEXPLAINED("Unexplained");
+    UNEXPLAINED("Unexplained"),
+    BIRTH_COMPLICATION("Birth Complications");
 
     private final String description;
 

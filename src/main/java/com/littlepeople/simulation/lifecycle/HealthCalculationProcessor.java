@@ -27,10 +27,10 @@ public class HealthCalculationProcessor extends AbstractEventProcessor implement
     private final Random random;
 
     // Health transition probabilities (adjustable parameters)
-    private double baseHealthDeclineRate = 0.02;  // 2% base chance per cycle
-    private double baseHealthImprovementRate = 0.15; // 15% chance to improve when sick
-    private double ageHealthDeclineMultiplier = 0.001; // Additional decline per year of age
-    private double criticalIllnessRecoveryRate = 0.05; // 5% chance to recover from critical illness
+    private double baseHealthDeclineRate = 0.02 / 12;  // 2% base chance per cycle
+    private double baseHealthImprovementRate = 0.15/ 12; // 15% chance to improve when sick
+    private double ageHealthDeclineMultiplier = 0.001/ 12; // Additional decline per year of age
+    private double criticalIllnessRecoveryRate = 0.05/ 12; // 5% chance to recover from critical illness
 private EventScheduler eventScheduler;
     /**
      * Creates a new HealthCalculationProcessor.

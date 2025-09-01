@@ -60,7 +60,7 @@ The system will define several configuration-related events:
 ## Technical Specifications
 
 ### ConfigurationManager Interface
-
+All configuration related classes are in teh `com.littlepeople.simulation.config` package.
 ```java
 /**
  * Central manager for configuration-related operations.

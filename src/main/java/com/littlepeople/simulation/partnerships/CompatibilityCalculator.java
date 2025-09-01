@@ -79,8 +79,8 @@ public class CompatibilityCalculator {
 
         // Check for absolute incompatibilities
         if (hasAbsoluteIncompatibility(person1, person2)) {
-            logger.debug("Absolute incompatibility found between {} and {}",
-                        person1.getId(), person2.getId());
+//            logger.debug("Absolute incompatibility found between {} and {}",
+//                        person1.getId(), person2.getId());
             return 0.0;
         }
 
@@ -97,10 +97,10 @@ public class CompatibilityCalculator {
             (lifeStageCompatibility * LIFE_STAGE_WEIGHT) +
             (socialCompatibility * SOCIAL_WEIGHT);
 
-        logger.debug("Compatibility between {} and {}: Age={}, Personality={}, LifeStage={}, Social={}, Overall={}",
-                    person1.getId(), person2.getId(),
-                    ageCompatibility, personalityCompatibility, lifeStageCompatibility,
-                    socialCompatibility, overallCompatibility);
+//        logger.debug("Compatibility between {} and {}: Age={}, Personality={}, LifeStage={}, Social={}, Overall={}",
+//                    person1.getId(), person2.getId(),
+//                    ageCompatibility, personalityCompatibility, lifeStageCompatibility,
+//                    socialCompatibility, overallCompatibility);
 
         return Math.max(0.0, Math.min(1.0, overallCompatibility));
     }
@@ -124,7 +124,7 @@ public class CompatibilityCalculator {
         }
 
         // Family relationships (parents, children, siblings)
-        if (areRelated(person1, person2)) {
+        if (person1.isDirectFamily( person2)) {
             return true;
         }
 
@@ -323,33 +323,7 @@ public class CompatibilityCalculator {
         return Math.max(0.4, 1.0 - (healthDiff * 0.15));
     }
 
-    /**
-     * Checks if two people are related (family members).
-     *
-     * @param person1 the first person
-     * @param person2 the second person
-     * @return true if they are family members
-     */
-    private boolean areRelated(Person person1, Person person2) {
-        // Check if person2 is person1's parent
-        if (person1.getParents().contains(person2)) {
-            return true;
-        }
 
-        // Check if person2 is person1's child
-        if (person1.getChildren().contains(person2)) {
-            return true;
-        }
-
-        // Check if they share any parents (siblings)
-        for (Person parent : person1.getParents()) {
-            if (person2.getParents().contains(parent)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     /**
      * Checks if two people are age-appropriate for a partnership.

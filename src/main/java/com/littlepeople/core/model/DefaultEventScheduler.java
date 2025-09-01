@@ -44,12 +44,25 @@ public class DefaultEventScheduler implements EventScheduler {
         }
 
         this.simulationClock = simulationClock;
-        this.eventQueue = new PriorityBlockingQueue<>(100, new EventComparator());
+        this.eventQueue = new PriorityBlockingQueue<>(1000, new EventComparator());
         this.eventMap = new ConcurrentHashMap<>();
         this.processors = new ConcurrentHashMap<>();
     }
 
     @Override
+    public void scheduleEvents(List<Event> events) throws SimulationException {
+        // call scheduleEvent for each
+        if (events == null || events.isEmpty()) {
+            return;
+        }
+        events.forEach(event -> {
+            try {
+                scheduleEvent(event);
+            } catch (SimulationException e) {
+                logger.error("Failed to schedule event: {}", event, e);
+            }
+        });
+    }
     public void scheduleEvent(Event event) throws SimulationException {
         if (event == null) {
             throw new IllegalArgumentException("Event cannot be null");
@@ -150,8 +163,8 @@ public class DefaultEventScheduler implements EventScheduler {
     }
 
     // Verarbeitung
-    private long maxProcessingTime = 0;
-    private String slowestProcessor = "";
+
+    private final Map<String, ProcessorStats> processorStats = new ConcurrentHashMap<>();
 
     private void processEvent(Event event) throws SimulationException {
         EventProcessor processor = processors.get(event.getClass());
@@ -171,14 +184,14 @@ public class DefaultEventScheduler implements EventScheduler {
             throw new SimulationException("Event processing failed", e);
         } finally {
             long duration = System.nanoTime() - start;
-            if (duration > maxProcessingTime) {
-                maxProcessingTime = duration;
-                slowestProcessor = processor.getClass().getSimpleName();
-                logger.info("Neuer langsamster Processor: {} ({} ms)", slowestProcessor, duration / 1_000_000);
-            }
+            String processorName = processor.getClass().getSimpleName();
+            processorStats.computeIfAbsent(processorName, k -> new ProcessorStats()).addTime(duration);
         }
     }
-
+@Override
+public Map<String, ProcessorStats> getProcessorStatistics() {
+    return Collections.unmodifiableMap(processorStats);
+}
     @Override
     public List<Event> getEventsAt(LocalDateTime time) {
         if (time == null) {

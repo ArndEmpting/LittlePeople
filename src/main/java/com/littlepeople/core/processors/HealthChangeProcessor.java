@@ -1,8 +1,6 @@
 package com.littlepeople.core.processors;
 
 import com.littlepeople.core.interfaces.Event;
-import com.littlepeople.core.interfaces.EventProcessor;
-import com.littlepeople.core.model.EventType;
 import com.littlepeople.core.model.Person;
 import com.littlepeople.core.model.PersonRegistry;
 import com.littlepeople.core.model.events.HealthChangedEvent;
@@ -11,17 +9,14 @@ import com.littlepeople.core.exceptions.SimulationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * Event processor for handling entity property changes.
  * This processor manages health, wealth, and other personal attribute changes.
  */
-public class EntityEventProcessor extends AbstractEventProcessor {
+public class HealthChangeProcessor extends AbstractEventProcessor {
 
-    private static final Logger logger = LoggerFactory.getLogger(EntityEventProcessor.class);
-    public EntityEventProcessor() {
+    private static final Logger logger = LoggerFactory.getLogger(HealthChangeProcessor.class);
+    public HealthChangeProcessor() {
       super(HealthChangedEvent.class);
     }
 

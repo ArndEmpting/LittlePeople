@@ -7,7 +7,13 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -29,8 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>Death handling with cause tracking</li>
  * </ul>
  *
- * @since 1.0.0
  * @version 1.0.0
+ * @since 1.0.0
  */
 public class Person implements Entity {
 
@@ -60,6 +66,7 @@ public class Person implements Entity {
     private final Set<Person> children;
     private final Set<Person> parents;
     private final Set<Person> formerPartner;
+    private boolean pregnant = false;
 
     /**
      * Creates a new person with the specified basic information.
@@ -69,8 +76,8 @@ public class Person implements Entity {
      * The person is created in a healthy state with randomized personality traits.</p>
      *
      * @param firstName the person's first name (required, non-empty)
-     * @param lastName the person's last name (required, non-empty)
-     * @param gender the person's gender (required)
+     * @param lastName  the person's last name (required, non-empty)
+     * @param gender    the person's gender (required)
      * @param birthDate the person's birth date (required, not in future)
      * @throws IllegalArgumentException if any parameter is invalid
      */
@@ -88,7 +95,7 @@ public class Person implements Entity {
         if (birthDate == null) {
             throw new IllegalArgumentException("Birth date cannot be null");
         }
-        if (birthDate.isAfter(LocalDate.now())) {
+        if (birthDate.isAfter(SimulationTimeProvider.getCurrentDate())) {
             throw new IllegalArgumentException("Birth date cannot be in the future: " + birthDate);
         }
 
@@ -112,7 +119,7 @@ public class Person implements Entity {
         // Do NOT initialize personality traits here - they will be set by PersonBuilder
 
         logger.debug("Created new person: {} {} (ID: {}, Gender: {}, Birth: {})",
-                    firstName, lastName, id, gender, birthDate);
+                firstName, lastName, id, gender, birthDate);
     }
 
     /**
@@ -132,7 +139,7 @@ public class Person implements Entity {
             int intensity = entry.getValue();
             if (intensity < 0 || intensity > 100) {
                 throw new IllegalArgumentException("Personality trait " + entry.getKey().getDisplayName() +
-                    " intensity must be between 0 and 100: " + intensity);
+                        " intensity must be between 0 and 100: " + intensity);
             }
         }
 
@@ -156,10 +163,8 @@ public class Person implements Entity {
      * @return the age in complete years
      * <p>For living persons, this method uses the current simulation time instead of
      * real system time to ensure consistency within the simulation.</p>
-     *
-     *
      * @throws IllegalStateException if no simulation clock has been set for living persons
-    */
+     */
     public int getAge() {
         LocalDate endDate;
         if (isAlive()) {
@@ -202,7 +207,7 @@ public class Person implements Entity {
      * @return true if adult, false if child
      */
     public boolean isAdult() {
-        return getLifeStage().isAdult();
+        return getAge() >= 16;
     }
 
     /**
@@ -229,13 +234,22 @@ public class Person implements Entity {
         this.partner = otherPerson;
         otherPerson.partner = this;
 
-        logger.info("Partnership formed between {} {} and {} {}",
-                   this.firstName, this.lastName,
-                   otherPerson.firstName, otherPerson.lastName);
+//        logger.info("Partnership formed between {} {} and {} {}",
+//                   this.firstName, this.lastName,
+//                   otherPerson.firstName, otherPerson.lastName);
     }
 
     public boolean isDeceased() {
         return !isAlive();
+    }
+
+    public boolean isPregnant() {
+        return pregnant;
+    }
+
+    public Person setPregnant(boolean pregnant) {
+        this.pregnant = pregnant;
+        return this;
     }
 
     /**
@@ -274,7 +288,7 @@ public class Person implements Entity {
     /**
      * Checks if another person is direct family (parent, child, or sibling).
      */
-    private boolean isDirectFamily(Person otherPerson) {
+    public boolean isDirectFamily(Person otherPerson) {
         // Check if parent/child relationship
         if (parents.contains(otherPerson) || children.contains(otherPerson)) {
             return true;
@@ -303,8 +317,8 @@ public class Person implements Entity {
             formerPartner.partner = null;
 
             logger.debug("Partnership dissolved between {} {} and {} {}",
-                       this.firstName, this.lastName,
-                       formerPartner.firstName, formerPartner.lastName);
+                    this.firstName, this.lastName,
+                    formerPartner.firstName, formerPartner.lastName);
         }
     }
 
@@ -322,24 +336,24 @@ public class Person implements Entity {
         validateChildRelationship(child);
 
         // Add bidirectional relationship
-        if(!this.children.contains(child)) {
+        if (!this.children.contains(child)) {
             this.children.add(child);
         }
-        if(!child.parents.contains(this)) {
+        if (!child.parents.contains(this)) {
             child.parents.add(this);
         }
 
         // If this person has a partner, add child to partner as well
         if (partner != null && !partner.children.contains(child)) {
             partner.children.add(child);
-            if(!child.parents.contains(partner)) {
+            if (!child.parents.contains(partner)) {
                 child.parents.add(partner);
             }
         }
 
         logger.debug("Added child {} {} to parent {} {}",
-                    child.firstName, child.lastName,
-                    this.firstName, this.lastName);
+                child.firstName, child.lastName,
+                this.firstName, this.lastName);
     }
 
     /**
@@ -356,8 +370,13 @@ public class Person implements Entity {
         if (child.birthDate.isBefore(this.birthDate)) {
             throw new IllegalArgumentException("Child cannot be older than parent");
         }
-
+        if (this.getAge() < 12) {
+            throw new IllegalArgumentException("Parent must be at least 12 years older than child");
+        }
         // Check minimum age difference (e.g., 12 years)
+        if (SimulationTimeProvider.getCurrentDate().isBefore(child.birthDate)) {
+            throw new IllegalArgumentException("Child's birth date cannot be in the future");
+        }
         int ageDifference = Period.between(this.birthDate, child.birthDate).getYears();
         if (ageDifference < 12) {
             throw new IllegalArgumentException("Parent must be at least 12 years older than child");
@@ -376,7 +395,7 @@ public class Person implements Entity {
      * </ul>
      *
      * @param deathDate the date of death (required, not before birth, not in future)
-     * @param cause the cause of death (optional, defaults to UNEXPLAINED)
+     * @param cause     the cause of death (optional, defaults to UNEXPLAINED)
      * @throws IllegalArgumentException if death date is invalid
      */
     public void markDeceased(LocalDate deathDate, DeathCause cause) {
@@ -389,7 +408,7 @@ public class Person implements Entity {
         removePartnership();
 
         logger.debug("Person deceased: {} {} (Age: {}, Cause: {})",
-                   firstName, lastName, getAge(), this.deathCause.getDescription());
+                firstName, lastName, getAge(), this.deathCause.getDescription());
     }
 
     /**
@@ -423,7 +442,7 @@ public class Person implements Entity {
     /**
      * Sets a personality trait to a specific intensity level.
      *
-     * @param trait the personality trait to set
+     * @param trait     the personality trait to set
      * @param intensity the intensity level (1-10)
      * @throws IllegalArgumentException if intensity is out of range
      */
@@ -559,18 +578,21 @@ public class Person implements Entity {
 
     @Override
     public String toString() {
-        return String.format("Person{id=%s, name='%s %s', gender=%s, age=%d, alive=%s}",
-                           id, firstName, lastName, gender, getAge(), isAlive());
+        return String.format("Person{id=%s, name='%s %s', gender=%s, age=%d, alive=%s, birthDate=%s}",
+                id, firstName, lastName, gender, getAge(), isAlive(), getBirthDate());
     }
 
-    public  int getMaxAgeYears() {
+    public int getMaxAgeYears() {
         return MAX_AGE_YEARS;
     }
 
     public Set<Person> getFormerPartner() {
         return this.formerPartner;
     }
+
     public void addFormerPartner(Person person) {
         this.formerPartner.add(person);
     }
+
+
 }

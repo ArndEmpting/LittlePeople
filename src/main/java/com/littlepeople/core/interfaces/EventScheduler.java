@@ -2,8 +2,11 @@ package com.littlepeople.core.interfaces;
 
 import com.littlepeople.core.exceptions.SimulationException;
 import com.littlepeople.core.model.EventType;
+import com.littlepeople.core.model.ProcessorStats;
+
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Interface for scheduling and managing events in the simulation system.
@@ -19,6 +22,7 @@ public interface EventScheduler {
      * @throws SimulationException if the event cannot be scheduled
      */
     void scheduleEvent(Event event) throws SimulationException;
+    void scheduleEvents(List<Event> events) throws SimulationException;
 
     /**
      * Schedules an event to be processed after the specified delay from now.
@@ -44,6 +48,8 @@ public interface EventScheduler {
      * @throws SimulationException if event processing fails
      */
     void processEvents(LocalDateTime currentTime) throws SimulationException;
+
+    Map<String, ProcessorStats> getProcessorStatistics();
 
     /**
      * Gets all events scheduled for a specific time.
