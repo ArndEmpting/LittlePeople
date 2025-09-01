@@ -80,4 +80,8 @@ public class SimulationTimeProvider {
     public static void clearSimulationClock() {
         currentClock = null;
     }
+
+    public static LocalDateTime getCurrentSimulationTime() {
+        return getCurrentDateTime();
+    }
 }

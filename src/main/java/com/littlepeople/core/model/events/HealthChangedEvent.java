@@ -3,6 +3,7 @@ package com.littlepeople.core.model.events;
 import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.model.EventType;
 import com.littlepeople.core.model.HealthStatus;
+import com.littlepeople.core.util.SimulationTimeProvider;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -31,7 +32,7 @@ public class HealthChangedEvent implements Event {
         this.newHealthStatus = newHealthStatus;
         this.previousHealthStatus = previousHealthStatus;
         this.timestamp = Instant.now();
-        this.scheduledTime = LocalDateTime.now();
+        this.scheduledTime = SimulationTimeProvider.getCurrentSimulationTime();
 
         this.data = new HashMap<>();
         this.data.put("personId", personId.toString());

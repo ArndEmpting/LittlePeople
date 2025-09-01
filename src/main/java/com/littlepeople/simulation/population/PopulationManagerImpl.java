@@ -1,5 +1,6 @@
 package com.littlepeople.simulation.population;
 
+import com.littlepeople.core.model.Gender;
 import com.littlepeople.core.model.Person;
 import com.littlepeople.core.exceptions.SimulationException;
 import com.littlepeople.core.model.PersonRegistry;
@@ -30,8 +31,8 @@ public class PopulationManagerImpl implements PopulationManager {
 
     private PopulationConfiguration configuration;
     private boolean initialized = false;
-    static PopulationManager instance = new PopulationManagerImpl();
-    public static PopulationManager getInstance() {
+    static PopulationManagerImpl instance = new PopulationManagerImpl();
+    public static PopulationManagerImpl getInstance() {
         return instance;
     }
     /**
@@ -165,7 +166,21 @@ public class PopulationManagerImpl implements PopulationManager {
 
         return Collections.unmodifiableList(getLivingPopulation());
     }
+    @Override
+    public List<Person> getSinglePopulation() {
+        if (!initialized) {
+            throw new IllegalStateException("Population is not initialized");
+        }
 
+        return Collections.unmodifiableList(getLivingPopulationWithoutPartner());
+    }
+    public List<Person> getFemalePopulationWithPartner() {
+        if (!initialized) {
+            throw new IllegalStateException("Population is not initialized");
+        }
+
+        return Collections.unmodifiableList(getLivingFemalePopulationWithPartner());
+    }
     @Override
     public List<Person> findInhabitants(PopulationSearchCriteria criteria) {
         if (!initialized) {
@@ -248,6 +263,21 @@ public class PopulationManagerImpl implements PopulationManager {
                 .filter(Person::isAlive)
                 .collect(Collectors.toList());
     }
+
+    // get population of living persons without partner
+    private List<Person> getLivingPopulationWithoutPartner() {
+        return PersonRegistry.getPersonRegistry().values().stream()
+                .filter(p -> p.isAlive() && p.getPartner() == null && p.getAge() >= 16)
+                .collect(Collectors.toList());
+    }
+    // get population of living persons without partner
+// get population of living persons without partner
+    private List<Person> getLivingFemalePopulationWithPartner() {
+        return PersonRegistry.getPersonRegistry().values().stream()
+                .filter(p -> p.getGender()== Gender.FEMALE && p.isAlive() && p.getPartner() != null && p.getAge() >= 16)
+                .collect(Collectors.toList());
+    }
+
 
     /**
      * Checks if a person matches the search criteria.

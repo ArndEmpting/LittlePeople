@@ -326,7 +326,13 @@ public class SimulationEngine implements SimulationLifecycle {
 
                     // Process any events that are due
                     eventScheduler.processEvents(currentTime);
-
+                    Map<String, ProcessorStats> processorStatistics = eventScheduler.getProcessorStatistics();
+                    for (Map.Entry<String, ProcessorStats> entry : processorStatistics.entrySet()) {
+                        String processorName = entry.getKey();
+                        ProcessorStats stats = entry.getValue();
+                        logger.info("Processor: {}, Events Processed: {}, Avg Time: {} ms, Max Time: {} ms",
+                                processorName, stats.getCount(), String.format("%.3f", stats.getAverageTimeMs()), stats.getMaxTimeMs());
+                    }
                     // Small delay to prevent excessive CPU usage
                     Thread.sleep(10);
                 } else if (currentState == SimulationState.PAUSED) {

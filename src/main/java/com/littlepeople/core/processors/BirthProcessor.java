@@ -1,21 +1,27 @@
-package com.littlepeople.simulation.partnerships;
+package com.littlepeople.core.processors;
 
 import com.littlepeople.core.exceptions.SimulationException;
-import com.littlepeople.core.interfaces.EventProcessor;
 import com.littlepeople.core.interfaces.Event;
+import com.littlepeople.core.interfaces.EventProcessor;
 import com.littlepeople.core.interfaces.EventScheduler;
-import com.littlepeople.core.model.*;
+import com.littlepeople.core.model.DeathCause;
+import com.littlepeople.core.model.Gender;
+import com.littlepeople.core.model.Person;
+import com.littlepeople.core.model.PersonBuilder;
+import com.littlepeople.core.model.PersonRegistry;
+import com.littlepeople.core.model.PersonalityTrait;
 import com.littlepeople.core.model.events.BirthEvent;
-import com.littlepeople.core.model.events.BirthEvent;
-import com.littlepeople.core.model.events.FamilyCalculationEvent;
-import com.littlepeople.core.model.events.PartnershipCalculationEvent;
-import com.littlepeople.core.processors.AbstractEventProcessor;
-import com.littlepeople.simulation.population.PopulationManagerImpl;
+import com.littlepeople.core.model.events.PersonDeathEvent;
+import com.littlepeople.core.util.NameGenerator;
+import com.littlepeople.simulation.partnerships.FertilityCalculatorInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 /**
  * Handles family formation through childbirth and genetic inheritance.
@@ -47,42 +53,31 @@ import java.util.*;
  * @version 1.0.0
  * @since 1.0.0
  */
-public class FamilyProcessor extends AbstractEventProcessor implements EventProcessor {
+public class BirthProcessor extends AbstractEventProcessor implements EventProcessor {
 
     public static final double DOMINANT_PARENT_INFLUENCE = 0.8;
     public static final double MINOR_PARENT_INFLUENCE = 0.2;
-    private static final Logger logger = LoggerFactory.getLogger(FamilyProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(BirthProcessor.class);
 
-    private final FertilityCalculatorInterface fertilityCalculator;
     private final Random random;
 
     // Configuration parameters
     private static final int PREGNANCY_DURATION_MONTHS = 9;
     private static final double TRAIT_INHERITANCE_VARIATION = 0.2; // 20% random variation
     private static final double BIRTH_COMPLICATION_RATE = 0.05; // 5% chance of complications
+    private static final double TWIN_PROBABILITY = 0.02;
+    private static final double TRIPLET_PROBABILITY = 0.0002;
     EventScheduler eventScheduler;
 
     /**
      * Creates a new family processor with default configuration.
      */
-    public FamilyProcessor(EventScheduler eventScheduler) {
-        super(FamilyCalculationEvent.class);
-        this.fertilityCalculator = new MedievalFertilityCalculator();
+    public BirthProcessor(EventScheduler eventScheduler) {
+        super(BirthEvent.class);
         this.random = new Random();
         this.eventScheduler = eventScheduler;
     }
 
-    /**
-     * Creates a new family processor with custom configuration.
-     *
-     * @param fertilityCalculator custom fertility calculator
-     * @param random              random number generator for reproducible testing
-     */
-    public FamilyProcessor(FertilityCalculatorInterface fertilityCalculator, Random random) {
-        super(FamilyCalculationEvent.class);
-        this.fertilityCalculator = fertilityCalculator;
-        this.random = random;
-    }
 
     /**
      * Processes family formation for all eligible partnerships in the population.
@@ -91,53 +86,80 @@ public class FamilyProcessor extends AbstractEventProcessor implements EventProc
      * calculates conception probabilities based on fertility factors, and
      * creates child events for successful conceptions.</p>
      *
-     * @param population  the current population
      * @param currentDate the current simulation date
      * @return list of child birth events created during this cycle
      * @throws SimulationException if processing fails
      */
-    public List<BirthEvent> processFamilyFormation(List<Person> population, LocalDate currentDate)
+    public void processBirthEvent(BirthEvent event, LocalDate currentDate)
             throws SimulationException {
 
-        if (population == null || population.isEmpty()) {
-            logger.debug("No population provided for family formation");
-            return Collections.emptyList();
+        // Find all eligible couples
+        Person mother = PersonRegistry.get(event.getMotherId());
+        Person father = PersonRegistry.get(event.getFatherId());
+        if (!mother.isAlive()) {
+            return;
+        }
+        int kids = numberOfBirths();
+
+        List<Person> children = createChilds(father, mother, currentDate, kids);
+        for (Person kid : children) {
+            PersonRegistry.add(kid);
+            logger.debug("Child {} born to parents {} and {}",
+                    kid.getFullName(), father.getFullName(), mother.getFullName());
         }
 
-        logger.debug("Processing family formation for {} people on {}", population.size(), currentDate);
+        mother.setPregnant(false);
 
-        List<BirthEvent> birthEvents = new ArrayList<>();
-
-        try {
-            // Find all eligible couples
+        List<Event> events = checkBirthComplications(children, mother,currentDate);
+        eventScheduler.scheduleEvents(events);
 
 
-            for (Person female : population) {
-                Person male = female.getPartner();
-                // Calculate conception probability for this month
-                double conceptionProbability = fertilityCalculator.calculateMonthlyConceptionProbability(
-                        male, female);
+    }
 
-                if (conceptionProbability > 0.0 && random.nextDouble() < conceptionProbability) {
-                    // Conception successful - create child
-                    female.setPregnant(true);
-                    // Create birth event
-                    BirthEvent birthEvent = new BirthEvent(
-                            female.getId(), male.getId(), currentDate.plusMonths(PREGNANCY_DURATION_MONTHS));
-
-                    birthEvents.add(birthEvent);
-
-                 }
-            }
-
-            logger.info("Family formation complete: {} children born", birthEvents.size());
-            return birthEvents;
-
-        } catch (Exception e) {
-            logger.error("Error during family formation processing", e);
-            throw new SimulationException("Failed to process family formation", e);
+    private int numberOfBirths() {
+        double roll = random.nextDouble();
+        if (roll < TRIPLET_PROBABILITY) {
+            return 3;
+        } else if (roll < TWIN_PROBABILITY) {
+            return 2;
+        } else {
+            return 1;
         }
     }
+
+    private List<Event> checkBirthComplications(List<Person> children, Person mother, LocalDate birthDate) {
+        List<Event> events = new java.util.ArrayList<>();
+        boolean motherDeath = false;
+        double deathRate = BIRTH_COMPLICATION_RATE * children.size();
+
+        // mother
+        if (random.nextDouble() < BIRTH_COMPLICATION_RATE) {
+            PersonDeathEvent deathEvent = new PersonDeathEvent(
+                    mother.getId(),
+                    birthDate,
+                    DeathCause.BIRTH_COMPLICATION
+            );
+            events.add(deathEvent);
+            motherDeath = true;
+        }
+        // when mother dies during birth, 50% chance of losing the
+        // baby
+        if (motherDeath) {
+            deathRate = BIRTH_COMPLICATION_RATE * 10;
+        }
+        for (Person child : children) {
+            if (random.nextDouble() < BIRTH_COMPLICATION_RATE) {
+                PersonDeathEvent deathEvent = new PersonDeathEvent(
+                        child.getId(),
+                        birthDate,
+                        DeathCause.BIRTH_COMPLICATION
+                );
+                events.add(deathEvent);
+            }
+        }
+        return events;
+    }
+
 
     /**
      * Creates a child with genetic traits inherited from both parents.
@@ -148,7 +170,8 @@ public class FamilyProcessor extends AbstractEventProcessor implements EventProc
      * @return the newly created child
      * @throws SimulationException if child creation fails
      */
-    public Person createChild(Person father, Person mother, LocalDate birthDate) throws SimulationException {
+    public List<Person> createChilds(Person father, Person mother, LocalDate birthDate, int numberOfBirths) throws SimulationException {
+        List<Person> children = new java.util.ArrayList<>();
         if (father == null || mother == null) {
             throw new IllegalArgumentException("Both parents must be non-null");
         }
@@ -158,60 +181,50 @@ public class FamilyProcessor extends AbstractEventProcessor implements EventProc
         }
 
         try {
-            // Generate child's basic information
-            String firstName = generateChildName();
-            String lastName = inheritLastName(father, mother);
-            Gender gender = generateChildGender();
+            for (int i = 0; i < numberOfBirths(); i++) {
+                Gender gender = generateChildGender();
+                // Generate child's basic information
+                String firstName = generateChildName(gender);
 
-            // Create child using PersonBuilder
-            PersonBuilder childBuilder = new PersonBuilder()
-                    .firstName(firstName)
-                    .lastName(lastName)
-                    .birthDate(birthDate)
-                    .gender(gender)
-                    .personalityTraits(inheritPersonalityTraits(father, mother));
-            // Inherit personality traits
+                for (Person sibling : children) {
+                    while (sibling.getFirstName().equals(firstName)) {
+                        firstName = generateChildName(gender);
+                    }
+                }
 
-            // Create the child
-            Person child = childBuilder.build();
 
-            // Establish family relationships
-            establishFamilyRelationships(child, father, mother);
+                String lastName = inheritLastName(father, mother);
 
-            logger.debug("Child created: {} {} ({}), born to {} and {} : family.size={}",
-                    firstName, lastName, gender, father.getId(), mother.getId(), mother.getChildren().size());
 
-            return child;
+                // Create child using PersonBuilder
+                PersonBuilder childBuilder = new PersonBuilder()
+                        .firstName(firstName)
+                        .lastName(lastName)
+                        .birthDate(birthDate)
+                        .gender(gender)
+                        .personalityTraits(inheritPersonalityTraits(father, mother));
+                // Inherit personality traits
+
+                // Create the child
+                Person child = childBuilder.build();
+
+                // Establish family relationships
+                establishFamilyRelationships(child, father, mother);
+                children.add(child);
+                logger.debug("Child created: {} {} ({}), born to {} and {} : family.size={}",
+                        firstName, lastName, gender, father.getId(), mother.getId(), mother.getChildren().size());
+            }
+
+
+            return children;
 
         } catch (Exception e) {
             logger.error("Failed to create child for parents {} and {}: birthDate {}",
-                    father, mother, birthDate,e);
+                    father, mother, birthDate, e);
             throw new SimulationException("Failed to create child", e);
         }
     }
 
-
-    /**
-     * Checks if a couple is eligible to have children.
-     *
-     * @param person1 first partner
-     * @param person2 second partner
-     * @return true if eligible for children
-     */
-    private boolean isEligibleForChildren(Person person1, Person person2) {
-        // Both must be alive
-        if (person1.isDeceased() || person2.isDeceased()) {
-            return false;
-        }
-
-        // Must be different genders
-        if (person1.getGender() == person2.getGender()) {
-            return false;
-        }
-
-        // At least one must be fertile
-        return fertilityCalculator.isFertile(person1) || fertilityCalculator.isFertile(person2);
-    }
 
     /**
      * Inherits personality traits from both parents.
@@ -285,17 +298,10 @@ public class FamilyProcessor extends AbstractEventProcessor implements EventProc
      *
      * @return randomly generated name
      */
-    private String generateChildName() {
-        // Simple name generation - in a full implementation, this would use
-        // cultural name databases and naming conventions
-        String[] maleNames = {"James", "John", "Robert", "Michael", "William", "David", "Richard", "Joseph", "Thomas", "Christopher"};
-        String[] femaleNames = {"Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen"};
+    private String generateChildName(Gender gender) {
 
-        if (random.nextBoolean()) {
-            return maleNames[random.nextInt(maleNames.length)];
-        } else {
-            return femaleNames[random.nextInt(femaleNames.length)];
-        }
+        NameGenerator nameGen = new NameGenerator();
+        return nameGen.generateFirstName(gender);
     }
 
     /**
@@ -330,7 +336,7 @@ public class FamilyProcessor extends AbstractEventProcessor implements EventProc
                 child.getId(), father.getId(), mother.getId());
     }
 
-    // EventProcessor interface implementation
+// EventProcessor interface implementation
 
     @Override
     public void processEvent(Event event) throws SimulationException {
@@ -344,13 +350,14 @@ public class FamilyProcessor extends AbstractEventProcessor implements EventProc
         }
 
         logger.debug("Processing event: {} of type: {}", event.getId(), event.getClass());
-        if (event instanceof FamilyCalculationEvent) {
-            List<BirthEvent> BirthEvents = processFamilyFormation(PopulationManagerImpl.getInstance().getFemalePopulationWithPartner()
-                    , ((FamilyCalculationEvent) event).getScheduledTime().toLocalDate());
-            eventScheduler.scheduleEvents(new ArrayList<Event>(BirthEvents));
-
+        if (event instanceof BirthEvent) {
+            BirthEvent childEvent = (BirthEvent) event;
+            processBirthEvent(childEvent, event.getScheduledTime().toLocalDate());
+            logger.info("Processing child birth event: {}", childEvent.getId());
+            // Event is already processed during creation, just mark as complete
+        } else {
+            logger.warn("Unknown event subtype for family processor: {}", event.getClass().getSimpleName());
         }
-
 
         // Mark event as processed
         event.markProcessed();
@@ -359,19 +366,8 @@ public class FamilyProcessor extends AbstractEventProcessor implements EventProc
 
     @Override
     public int getPriority() {
-        return 200; // Higher priority than partnership processing since family formation depends on partnerships
+        return 800; // Higher priority than partnership processing since family formation depends on partnerships
     }
 
-    /**
-     * Helper class to represent a partnership for family formation.
-     */
-    private static class Partnership {
-        final Person malePartner;
-        final Person femalePartner;
 
-        Partnership(Person malePartner, Person femalePartner) {
-            this.malePartner = malePartner;
-            this.femalePartner = femalePartner;
-        }
-    }
 }

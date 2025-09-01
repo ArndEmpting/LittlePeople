@@ -142,6 +142,9 @@ public class FertilityCalculator implements FertilityCalculatorInterface {
         if (person.getGender() == Gender.FEMALE && (age < MIN_FERTILE_AGE || age > MAX_FERTILE_AGE)) {
             return false;
         }
+        if(person.isPregnant()){
+            return false;
+        }
        // Age-based fertility check
         if (person.getGender() == Gender.MALE && (age < MIN_FERTILE_AGE || age > MAX_MALE_FERTILE_AGE)) {
             return false;

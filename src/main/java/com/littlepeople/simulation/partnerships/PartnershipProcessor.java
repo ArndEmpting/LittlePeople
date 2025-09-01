@@ -1,14 +1,15 @@
 package com.littlepeople.simulation.partnerships;
 
 import com.littlepeople.core.exceptions.SimulationException;
-import com.littlepeople.core.interfaces.EventProcessor;
 import com.littlepeople.core.interfaces.Event;
-import com.littlepeople.core.model.Person;
+import com.littlepeople.core.interfaces.EventProcessor;
+import com.littlepeople.core.interfaces.EventScheduler;
+import com.littlepeople.core.model.Gender;
 import com.littlepeople.core.model.LifeStage;
-import com.littlepeople.core.model.EventType;
+import com.littlepeople.core.model.Person;
 import com.littlepeople.core.model.events.PartnershipCalculationEvent;
-import com.littlepeople.core.model.events.PartnershipFormedEvent;
 import com.littlepeople.core.model.events.PartnershipDissolvedEvent;
+import com.littlepeople.core.model.events.PartnershipFormedEvent;
 import com.littlepeople.core.model.events.PersonDeathEvent;
 import com.littlepeople.core.processors.AbstractEventProcessor;
 import com.littlepeople.simulation.population.PopulationManagerImpl;
@@ -44,8 +45,8 @@ import java.util.stream.Collectors;
  *   <li>Person must be in appropriate life stage (not child)</li>
  * </ul>
  *
- * @since 1.0.0
  * @version 1.0.0
+ * @since 1.0.0
  */
 public class PartnershipProcessor extends AbstractEventProcessor implements EventProcessor {
 
@@ -59,21 +60,23 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
     private static final double COMPATIBILITY_THRESHOLD = 0.3; // Minimum compatibility for consideration
     private static final int MAX_PARTNERS_TO_CONSIDER = 10; // Limit for performance
     private static final int MIN_PARTNERSHIP_AGE = 16;
-
+    Map<Partner, Double> compatibilityMap = new HashMap<>();
+    EventScheduler eventScheduler;
     /**
      * Creates a new partnership processor with default configuration.
      */
-    public PartnershipProcessor() {
+    public PartnershipProcessor(EventScheduler eventScheduler) {
         super(PartnershipCalculationEvent.class);
         this.compatibilityCalculator = new CompatibilityCalculator();
         this.random = new Random();
+        this.eventScheduler = eventScheduler;
     }
 
     /**
      * Creates a new partnership processor with custom configuration.
      *
      * @param compatibilityCalculator custom compatibility calculator
-     * @param random random number generator for reproducible testing
+     * @param random                  random number generator for reproducible testing
      */
     public PartnershipProcessor(CompatibilityCalculator compatibilityCalculator, Random random) {
         super(PartnershipCalculationEvent.class);
@@ -89,27 +92,26 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
      * calculations. The algorithm ensures realistic partnership formation rates
      * while maintaining high-quality matches.</p>
      *
-     * @param population the current population of people
+     * @param population  the current population of people
      * @param currentDate the current simulation date
      * @return list of partnership events created during this cycle
      * @throws SimulationException if processing fails due to data corruption or system errors
      */
-    public List<PartnershipFormedEvent> processPartnershipFormation(List<Person> population, LocalDate currentDate)
+    public List<PartnershipFormedEvent> processPartnershipFormation(List<Person> eligibleSingles, LocalDate currentDate)
             throws SimulationException {
 
-        if (population == null || population.isEmpty()) {
+        if (eligibleSingles == null || eligibleSingles.isEmpty()) {
             logger.debug("No population provided for partnership formation");
             return Collections.emptyList();
         }
 
-        logger.debug("Processing partnership formation for {} people on {}", population.size(), currentDate);
+        logger.debug("Processing partnership formation for {} people on {}", eligibleSingles.size(), currentDate);
 
         List<PartnershipFormedEvent> partnerships = new ArrayList<>();
-
+        compatibilityMap.clear();
         try {
             // Find all eligible singles
-            List<Person> eligibleSingles = findEligibleSingles(population);
-            logger.debug("Found {} eligible singles for partnership formation", eligibleSingles.size());
+//            logger.debug("Found {} eligible singles for partnership formation", eligibleSingles.size());
 
             // Process partnership formation for each eligible person
             Set<UUID> alreadyMatched = new HashSet<>();
@@ -124,8 +126,9 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
 
                 // Remove already matched people
                 potentialPartners = potentialPartners.stream()
-                    .filter(p -> !alreadyMatched.contains(p.getId()))
-                    .collect(Collectors.toList());
+                        .filter(p -> p.getPartner() ==null)
+                        .filter(p -> !alreadyMatched.contains(p.getId()))
+                        .collect(Collectors.toList());
 
                 if (potentialPartners.isEmpty()) {
                     continue;
@@ -141,8 +144,8 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
                     alreadyMatched.add(person.getId());
                     alreadyMatched.add(selectedPartner.getId());
 
-                    logger.debug("Partnership formed between {} and {}",
-                               person.getId(), selectedPartner.getId());
+//                    logger.debug("Partnership formed between {} and {}",
+//                            person.getId(), selectedPartner.getId());
                 }
             }
 
@@ -183,13 +186,19 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
      * @return compatibility score from 0.0 to 1.0
      */
     public double calculateCompatibility(Person person1, Person person2) {
-        return compatibilityCalculator.calculateCompatibility(person1, person2);
+        Partner partner = new Partner(person1, person2);
+        Double compatibility = compatibilityMap.get(partner);
+        if (compatibility == null) {
+            compatibility = compatibilityCalculator.calculateCompatibility(person1, person2);
+            compatibilityMap.put(partner, compatibility);
+        }
+        return compatibility;
     }
 
     /**
      * Finds all eligible partners for a specific person.
      *
-     * @param person the person seeking partnership
+     * @param person     the person seeking partnership
      * @param population the population to search within
      * @return list of eligible partners sorted by compatibility (highest first)
      */
@@ -198,54 +207,23 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
             return Collections.emptyList();
         }
 
-        return population.stream()
-            .filter(p -> !p.getId().equals(person.getId())) // Not same person
-            .filter(this::isEligibleForPartnership) // Must be eligible
-            .map(p -> new PartnerMatch(p, compatibilityCalculator.calculateCompatibility(person, p)))
-            .filter(match -> match.compatibility >= COMPATIBILITY_THRESHOLD) // Minimum compatibility
-            .sorted((m1, m2) -> Double.compare(m2.compatibility, m1.compatibility)) // Highest compatibility first
-            .limit(MAX_PARTNERS_TO_CONSIDER) // Limit for performance
-            .map(match -> match.person)
-            .collect(Collectors.toList());
+        return population.parallelStream()
+                .filter(p -> !p.getId().equals(person.getId()))
+                .map(p -> new PartnerMatch(p, calculateCompatibility(person, p)))
+                .filter(match -> match.compatibility >= COMPATIBILITY_THRESHOLD)
+                .sorted((m1, m2) -> Double.compare(m2.compatibility, m1.compatibility))
+                .limit(MAX_PARTNERS_TO_CONSIDER)
+                .map(match -> match.person)
+                .collect(Collectors.toList());
     }
 
-    /**
-     * Determines if a person is eligible for partnership formation.
-     *
-     * @param person the person to check
-     * @return true if the person is eligible for partnership
-     */
-    public boolean isEligibleForPartnership(Person person) {
-        if (person == null || !person.isAlive()) {
-            return false;
-        }
 
-        // Must be old enough
-        if (person.getAge() < MIN_PARTNERSHIP_AGE) {
-            return false;
-        }
-
-        // Must not be a child
-        if (person.getLifeStage() == LifeStage.CHILD) {
-            return false;
-        }
-
-        // Must not already have a partner
-        if (person.getPartner() != null) {
-            return false;
-        }
-
-        // Must be available for partnership based on relationship status
-        // Note: This assumes RelationshipStatus is added to Person class
-        // For now, we'll use the partner field as the primary indicator
-        return true;
-    }
 
     /**
      * Creates a partnership event between two people.
      *
-     * @param person1 the first person
-     * @param person2 the second person
+     * @param person1         the first person
+     * @param person2         the second person
      * @param partnershipDate the date when the partnership begins
      * @return the partnership event
      * @throws SimulationException if partnership creation fails
@@ -266,33 +244,22 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
             PartnershipFormedEvent event = new PartnershipFormedEvent(person1.getId(), person2.getId());
 
             logger.debug("Partnership created between {} and {} on {}",
-                       person1.getId(), person2.getId(), partnershipDate);
+                    person1.getId(), person2.getId(), partnershipDate);
 
             return event;
 
         } catch (Exception e) {
             logger.error("Failed to create partnership between {} and {}",
-                        person1.getId(), person2.getId(), e);
+                    person1.getId(), person2.getId(), e);
             throw new SimulationException("Failed to create partnership", e);
         }
     }
 
-    /**
-     * Finds all eligible singles in the population.
-     *
-     * @param population the population to search
-     * @return list of people eligible for partnership formation
-     */
-    private List<Person> findEligibleSingles(List<Person> population) {
-        return population.stream()
-            .filter(this::isEligibleForPartnership)
-            .collect(Collectors.toList());
-    }
 
     /**
      * Selects a partner from the list of potential partners using probability-based selection.
      *
-     * @param person the person seeking partnership
+     * @param person            the person seeking partnership
      * @param potentialPartners list of potential partners sorted by compatibility
      * @return selected partner or null if no partnership is formed
      */
@@ -354,7 +321,7 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
     /**
      * Selects a partner with weighted preference for higher compatibility.
      *
-     * @param person the person seeking partnership
+     * @param person            the person seeking partnership
      * @param potentialPartners list of potential partners
      * @return selected partner
      */
@@ -364,7 +331,7 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
         double totalWeight = 0.0;
 
         for (Person partner : potentialPartners) {
-            double compatibility = compatibilityCalculator.calculateCompatibility(person, partner);
+            double compatibility = calculateCompatibility(person, partner);
             // Square the compatibility to give higher preference to better matches
             double weight = compatibility * compatibility;
             weights.add(weight);
@@ -392,7 +359,6 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
     }
 
 
-
     @Override
     public void processEvent(Event event) throws SimulationException {
         if (event == null) {
@@ -407,8 +373,8 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
         logger.debug("Processing event: {} of type: {}", event.getId(), event.getClass());
 
         // Handle different event types
-        processPartnershipFormation(PopulationManagerImpl.getInstance().getPopulation(), partnershipEvent.getEventDate());
-
+        List<PartnershipFormedEvent> partnershipFormedEvents = processPartnershipFormation(PopulationManagerImpl.getInstance().getSinglePopulation(), partnershipEvent.getEventDate());
+       eventScheduler.scheduleEvents(new ArrayList<Event>(partnershipFormedEvents));
         // Mark event as processed
         if (event instanceof com.littlepeople.core.interfaces.Event) {
             ((com.littlepeople.core.interfaces.Event) event).markProcessed();
@@ -431,6 +397,31 @@ public class PartnershipProcessor extends AbstractEventProcessor implements Even
         PartnerMatch(Person person, double compatibility) {
             this.person = person;
             this.compatibility = compatibility;
+        }
+    }
+
+    private static class Partner {
+        Person male;
+        Person female;
+
+        public Partner(Person p1, Person p2) {
+
+            this.male = p1.getGender() == Gender.MALE ? p1 : p2;
+            this.female = male == null ? p1 : p2;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+
+            Partner partner = (Partner) o;
+            return Objects.equals(male.getId(), partner.male.getId()) && Objects.equals(female.getId(), partner.female.getId());
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hashCode(male.getId());
+            result = 31 * result + Objects.hashCode(female.getId());
+            return result;
         }
     }
 }

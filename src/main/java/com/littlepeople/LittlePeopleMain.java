@@ -27,8 +27,8 @@ public class LittlePeopleMain {
 
     private static final Logger logger = LoggerFactory.getLogger(LittlePeopleMain.class);
     private static final int INITIAL_POPULATION_SIZE = 1000;
-    private static final int SIMULATION_DURATION_DAYS = 600; // Run for 300 year
-    private static final Random random = new Random();
+    private static final int SIMULATION_DURATION = 100*12;
+    static final Random random = new Random();
 
     public static void main(String[] args) {
         logger.info("Starting LittlePeople simulation...");
@@ -54,8 +54,8 @@ public class LittlePeopleMain {
 
             }
             // Let simulation run for specified duration
-            logger.info("Simulation running for {} days...", SIMULATION_DURATION_DAYS);
-            Thread.sleep(SIMULATION_DURATION_DAYS * 50); // Scaled time for demo
+            logger.info("Simulation running for {} days...", SIMULATION_DURATION);
+            Thread.sleep(SIMULATION_DURATION * 50); // Scaled time for demo
 
             // Stop the simulation
             engine.stop();

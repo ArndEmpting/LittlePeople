@@ -263,7 +263,7 @@ public class PopulationGenerator {
             Person person2 = availableAdults.get(i + 1);
 
             // Only pair different genders for this implementation
-            if (person1.getGender() != person2.getGender()
+            if (person1.getGender() != person2.getGender() && !person1.isDirectFamily(person2)
             ) {
                 person1.setPartner(person2);
 

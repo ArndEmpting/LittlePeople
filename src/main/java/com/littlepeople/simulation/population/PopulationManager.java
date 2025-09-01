@@ -89,6 +89,8 @@ public interface PopulationManager {
      */
     List<Person> getPopulation();
 
+    List<Person> getSinglePopulation();
+
     /**
      * Gets inhabitants matching the specified search criteria.
      *

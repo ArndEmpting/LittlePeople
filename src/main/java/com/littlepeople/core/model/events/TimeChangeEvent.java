@@ -3,6 +3,7 @@ package com.littlepeople.core.model.events;
 import com.littlepeople.core.interfaces.Event;
 import com.littlepeople.core.model.EventType;
 import com.littlepeople.core.model.Person;
+import com.littlepeople.core.util.SimulationTimeProvider;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -34,7 +35,7 @@ public class TimeChangeEvent implements Event {
         this.previousDate = previousDate;
         this.affectedPersonIds = affectedPersonIds;
         this.timestamp = Instant.now();
-        this.scheduledTime = LocalDateTime.now();
+        this.scheduledTime = SimulationTimeProvider.getCurrentSimulationTime();
 
         this.data = new HashMap<>();
         this.data.put("newDate", newDate.toString());

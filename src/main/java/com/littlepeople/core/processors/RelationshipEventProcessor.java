@@ -26,7 +26,7 @@ public class RelationshipEventProcessor extends AbstractEventProcessor {
 
 
     public RelationshipEventProcessor() {
-        super(PartnershipEvent.class);
+        super(PartnershipFormedEvent.class);
     }
 
 
@@ -52,17 +52,19 @@ public class RelationshipEventProcessor extends AbstractEventProcessor {
         if (person1 == null || person2 == null) {
             throw new SimulationException("One or both persons not found for partnership");
         }
-
+        if(!person1.isAlive() || !person2.isAlive() || person1.isDirectFamily( person2)){
+            return;
+        }
         // Validate partnership rules
         validatePartnership(person1, person2);
 
         // Set bidirectional partnership - direct state change
         person1.setPartner(person2);
-        person2.setPartner(person1);
 
-        logger.info("Processed partnership formation between {} {} and {} {}",
-                   person1.getFirstName(), person1.getLastName(),
-                   person2.getFirstName(), person2.getLastName());
+
+//        logger.info("Processed partnership formation between {} {} and {} {}",
+//                   person1.getFirstName(), person1.getLastName(),
+//                   person2.getFirstName(), person2.getLastName());
     }
 
     private void processPartnershipDissolved(PartnershipDissolvedEvent event) throws SimulationException {
@@ -120,7 +122,7 @@ public class RelationshipEventProcessor extends AbstractEventProcessor {
         if (person1.getPartner() != null || person2.getPartner() != null) {
             throw new SimulationException("One or both persons already have partners");
         }
-        if (isDirectFamily(person1, person2)) {
+        if (person1.isDirectFamily( person2)) {
             throw new SimulationException("Cannot partner with direct family member");
         }
     }
@@ -137,21 +139,6 @@ public class RelationshipEventProcessor extends AbstractEventProcessor {
         }
     }
 
-    private boolean isDirectFamily(Person person1, Person person2) {
-        // Check if parent/child relationship
-        if (person1.getParents().contains(person2) || person1.getChildren().contains(person2)) {
-            return true;
-        }
-
-        // Check if siblings (share at least one parent)
-        for (Person parent : person1.getParents()) {
-            if (person2.getParents().contains(parent)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
 
     @Override
